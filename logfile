@@ -36,3 +36,39 @@
 2025-12-01 19:51:55.699 UTC [1481] LOG:  checkpoint complete: wrote 35 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=3.423 s, sync=0.011 s, total=3.453 s; sync files=27, longest=0.007 s, average=0.001 s; distance=95 kB, estimate=4260 kB
 2025-12-01 20:01:52.796 UTC [1481] LOG:  checkpoint starting: time
 2025-12-01 20:01:53.437 UTC [1481] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.508 s, sync=0.009 s, total=0.642 s; sync files=6, longest=0.006 s, average=0.002 s; distance=1 kB, estimate=3834 kB
+2025-12-01 22:49:38.237 UTC [2163] LOG:  starting PostgreSQL 15.7 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 12.3.0, 64-bit
+2025-12-01 22:49:38.237 UTC [2163] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2025-12-01 22:49:38.246 UTC [2163] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2025-12-01 22:49:38.258 UTC [2166] LOG:  database system was interrupted; last known up at 2025-12-01 20:01:53 UTC
+2025-12-01 22:49:38.336 UTC [2166] LOG:  database system was not properly shut down; automatic recovery in progress
+2025-12-01 22:49:38.371 UTC [2166] LOG:  redo starts at 0/1F12D78
+2025-12-01 22:49:38.371 UTC [2166] LOG:  invalid record length at 0/1F12E60: wanted 24, got 0
+2025-12-01 22:49:38.371 UTC [2166] LOG:  redo done at 0/1F12E28 system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+2025-12-01 22:49:38.380 UTC [2164] LOG:  checkpoint starting: end-of-recovery immediate wait
+2025-12-01 22:49:38.409 UTC [2164] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.007 s, sync=0.003 s, total=0.033 s; sync files=2, longest=0.002 s, average=0.002 s; distance=0 kB, estimate=0 kB
+2025-12-01 22:49:38.423 UTC [2163] LOG:  database system is ready to accept connections
+2025-12-01 22:49:40.905 UTC [2208] LOG:  invalid length of startup packet
+2025-12-01 22:49:40.915 UTC [2209] LOG:  invalid length of startup packet
+2025-12-01 22:50:39.566 UTC [2407] ERROR:  column "role" of relation "Users" does not exist at character 93
+2025-12-01 22:50:39.566 UTC [2407] STATEMENT:  
+	-- 1. Crear un Usuario Doctor
+	INSERT INTO "Users" (first_name, last_name, email, password, role) 
+	VALUES ('Dr. House', 'Gregory', 'house@clinic.com', '123456', 'specialist');
+	
+	-- 2. Crear el Especialista (vinculado al usuario 1 si es base limpia, o ajusta el ID)
+	INSERT INTO "Specialists" (user_id, first_name, last_name, specialty, license_number)
+	VALUES ((SELECT id FROM "Users" WHERE email='house@clinic.com'), 'Gregory', 'House', 'General', 'MED-999');
+	
+	-- 3. Crear Categoría y Servicio
+	INSERT INTO "ServiceCategories" (name) VALUES ('General');
+	INSERT INTO "Services" (category_id, name, price, duration_minutes) 
+	VALUES ((SELECT id FROM "ServiceCategories" LIMIT 1), 'Consulta General', 50000, 30);
+	
+2025-12-01 22:54:38.457 UTC [2164] LOG:  checkpoint starting: time
+2025-12-01 22:54:42.212 UTC [2164] LOG:  checkpoint complete: wrote 38 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=3.727 s, sync=0.010 s, total=3.756 s; sync files=28, longest=0.005 s, average=0.001 s; distance=41 kB, estimate=41 kB
+2025-12-01 23:09:38.465 UTC [2164] LOG:  checkpoint starting: time
+2025-12-01 23:09:39.399 UTC [2164] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.909 s, sync=0.007 s, total=0.935 s; sync files=9, longest=0.004 s, average=0.001 s; distance=1 kB, estimate=37 kB
+2025-12-01 23:29:42.719 UTC [14822] ERROR:  relation "patients" does not exist at character 15
+2025-12-01 23:29:42.719 UTC [14822] STATEMENT:  SELECT * FROM "patients" WHERE "patients"."id" = $1
+2025-12-01 23:32:30.728 UTC [14822] ERROR:  relation "patients" does not exist at character 15
+2025-12-01 23:32:30.728 UTC [14822] STATEMENT:  SELECT * FROM "patients" WHERE "patients"."id" = $1

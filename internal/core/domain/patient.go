@@ -7,3 +7,9 @@ type Patient struct {
 	DocumentNumber string    `json:"document_number"`
 	CreatedAt      time.Time `json:"created_at"`
 }
+// ... (debajo del struct Patient)
+
+// TableName le dice a GORM el nombre exacto de la tabla en PostgreSQL
+func (Patient) TableName() string {
+	return "\"Patient\""
+}
