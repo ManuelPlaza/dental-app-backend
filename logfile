@@ -1,0 +1,38 @@
+2025-12-01 19:05:44.830 UTC [1480] LOG:  starting PostgreSQL 15.7 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 12.3.0, 64-bit
+2025-12-01 19:05:44.831 UTC [1480] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2025-12-01 19:05:44.838 UTC [1480] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2025-12-01 19:05:44.849 UTC [1483] LOG:  database system was shut down at 2025-12-01 19:05:36 UTC
+2025-12-01 19:05:44.861 UTC [1480] LOG:  database system is ready to accept connections
+2025-12-01 19:05:47.908 UTC [1521] LOG:  invalid length of startup packet
+2025-12-01 19:05:47.924 UTC [1522] LOG:  invalid length of startup packet
+2025-12-01 19:10:44.949 UTC [1481] LOG:  checkpoint starting: time
+2025-12-01 19:12:25.197 UTC [1481] LOG:  checkpoint complete: wrote 1001 buffers (6.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=100.125 s, sync=0.046 s, total=100.249 s; sync files=317, longest=0.023 s, average=0.001 s; distance=4709 kB, estimate=4709 kB
+2025-12-01 19:24:34.952 UTC [13655] ERROR:  database "dental_db" is being accessed by other users
+2025-12-01 19:24:34.952 UTC [13655] DETAIL:  There is 1 other session using the database.
+2025-12-01 19:24:34.952 UTC [13655] STATEMENT:  DROP DATABASE dental_db;
+2025-12-01 19:24:35.000 UTC [13710] ERROR:  database "dental_db" already exists
+2025-12-01 19:24:35.000 UTC [13710] STATEMENT:  CREATE DATABASE dental_db;
+2025-12-01 19:24:35.248 UTC [13721] ERROR:  syntax error at end of input at character 80
+2025-12-01 19:24:35.248 UTC [13721] STATEMENT:  ALTER TABLE "Appointments" ADD CONSTRAINT "appointments_patient_fk" FOREIGN KEY
+2025-12-01 19:25:44.486 UTC [1481] LOG:  checkpoint starting: time
+2025-12-01 19:25:53.663 UTC [1481] LOG:  checkpoint complete: wrote 92 buffers (0.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=9.144 s, sync=0.013 s, total=9.177 s; sync files=90, longest=0.005 s, average=0.001 s; distance=394 kB, estimate=4278 kB
+2025-12-01 19:26:51.671 UTC [1481] LOG:  checkpoint starting: immediate force wait
+2025-12-01 19:26:51.697 UTC [1481] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.005 s, total=0.027 s; sync files=2, longest=0.005 s, average=0.003 s; distance=3 kB, estimate=3850 kB
+2025-12-01 19:31:51.798 UTC [1481] LOG:  checkpoint starting: time
+2025-12-01 19:33:31.858 UTC [1481] LOG:  checkpoint complete: wrote 999 buffers (6.1%); 1 WAL file(s) added, 0 removed, 0 recycled; write=99.889 s, sync=0.026 s, total=100.061 s; sync files=352, longest=0.004 s, average=0.001 s; distance=4723 kB, estimate=4723 kB
+2025-12-01 19:35:02.194 UTC [15233] ERROR:  relation "users" does not exist at character 15
+2025-12-01 19:35:02.194 UTC [15233] STATEMENT:  select * from users;
+2025-12-01 19:35:14.091 UTC [15233] ERROR:  relation "users" does not exist at character 15
+2025-12-01 19:35:14.091 UTC [15233] STATEMENT:  select * from Users;
+2025-12-01 19:35:32.358 UTC [15233] ERROR:  relation "users" does not exist at character 15
+2025-12-01 19:35:32.358 UTC [15233] STATEMENT:  select * from Users;
+2025-12-01 19:40:28.471 UTC [18075] ERROR:  relation "patients" does not exist at character 13
+2025-12-01 19:40:28.471 UTC [18075] STATEMENT:  INSERT INTO "patients" ("first_name","last_name","document_number","created_at") VALUES ($1,$2,$3,$4) RETURNING "id"
+2025-12-01 19:42:36.700 UTC [18782] ERROR:  column "first_name" of relation "Patient" does not exist at character 24
+2025-12-01 19:42:36.700 UTC [18782] STATEMENT:  INSERT INTO "Patient" ("first_name","last_name","document_number","created_at") VALUES ($1,$2,$3,$4) RETURNING "id"
+2025-12-01 19:48:28.509 UTC [19162] ERROR:  column "created_at" of relation "Patient" does not exist at character 67
+2025-12-01 19:48:28.509 UTC [19162] STATEMENT:  INSERT INTO "Patient" ("first_name","last_name","document_number","created_at") VALUES ($1,$2,$3,$4) RETURNING "id"
+2025-12-01 19:51:52.247 UTC [1481] LOG:  checkpoint starting: time
+2025-12-01 19:51:55.699 UTC [1481] LOG:  checkpoint complete: wrote 35 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=3.423 s, sync=0.011 s, total=3.453 s; sync files=27, longest=0.007 s, average=0.001 s; distance=95 kB, estimate=4260 kB
+2025-12-01 20:01:52.796 UTC [1481] LOG:  checkpoint starting: time
+2025-12-01 20:01:53.437 UTC [1481] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.508 s, sync=0.009 s, total=0.642 s; sync files=6, longest=0.006 s, average=0.002 s; distance=1 kB, estimate=3834 kB
