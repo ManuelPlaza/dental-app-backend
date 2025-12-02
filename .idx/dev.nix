@@ -1,40 +1,42 @@
 { pkgs, ... }: {
-  # Usamos el canal estable de Nix
-  channel = "stable-23.11";
+channel = "stable-24.05"; # <--- La versión que te pedí poner
+  # ... (Tu código de channel y packages igual que antes) ...
 
-  # Aquí instalamos los programas
   packages = [
     pkgs.go
     pkgs.postgresql
     pkgs.lsof
-    # --- AGREGADO PARA FLUTTER ---
-    pkgs.flutter
+    # --- CONFIGURACIÓN DE FLUTTER QUE FUERZA UNA INSTALACIÓN LIMPIA ---
+    (pkgs.flutter.override { enableStableChannel = true; })
     pkgs.dart
-    pkgs.cmake       # Necesario para construir la app en Linux
+    pkgs.cmake
     pkgs.ninja
     pkgs.pkg-config
-    # -----------------------------
   ];
 
-  # Variables de entorno
   env = {};
 
-  # Configuración de IDX
+  # --- CONFIGURACIÓN DE VISTA PREVIA (EL CÓDIGO QUE FALTABA) ---
   idx = {
     extensions = [
       "golang.go"
-      "Dart-Code.flutter"   # <--- Extensión visual de Flutter
-      "Dart-Code.dart-code" # <--- Extensión visual de Dart
+      "Dart-Code.flutter"
+      "Dart-Code.dart-code"
     ];
     
-    # Esto es opcional, previsualizaciones
-    previews = {};
+    previews = { # <--- AÑADIR ESTE BLOQUE
+        enable = true;
+        previews = {
+            web = {
+              # --- AQUÍ ESTÁ EL CAMBIO CRÍTICO: AGREGAR EL 'cd' ---
+                command = ["bash" "-c" "cd dental_frontend && flutter run --machine -d web-server --web-hostname 0.0.0.0 --web-port $PORT"];
+                manager = "flutter";
+            };
+        };
+    };
     
-    # Workspace
     workspace = {
-      onCreate = {
-        # Configuración inicial (opcional)
-      };
+      onCreate = {};
     };
   };
 }

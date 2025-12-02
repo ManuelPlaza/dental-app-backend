@@ -1,1 +1,1 @@
-/usr/bin/postgres "-D" ".local/state/postgres" "-k" "/tmp"
+/usr/bin/postgres "-D" ".local/state/postgres" "-k" "/tmp" "-p" "5432"
