@@ -8,6 +8,7 @@ import (
 	"dental-app/internal/adapters/repository"
 	"dental-app/internal/core/services"
 
+	"github.com/gin-contrib/cors" // <--- Importado
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -41,17 +42,24 @@ func main() {
 
 	// --- MÓDULO 3: PAGOS (Caja) ---
 	payRepo := repository.NewGormPaymentRepo(db)
-	// Nota: El servicio de pagos necesita acceso a Citas para calcular saldos
 	paySrv := services.NewPaymentService(payRepo, appointRepo)
 	payHdl := handler.NewPaymentHandler(paySrv)
 
-	// --- MÓDULO 4: HISTORIA CLÍNICA (El que faltaba) ---
+	// --- MÓDULO 4: HISTORIA CLÍNICA ---
 	historyRepo := repository.NewGormMedicalHistoryRepo(db)
 	historySrv := services.NewMedicalHistoryService(historyRepo)
 	historyHdl := handler.NewMedicalHistoryHandler(historySrv)
 
 	// 4. Configurar Router (Gin)
 	r := gin.Default()
+
+	// --- CONFIGURACIÓN CORS (ESTO ES LO QUE FALTABA USAR) ---
+	// Permite que Flutter (puerto 3000 o celular) hable con Go (puerto 8080)
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	r.Use(cors.New(config)) // <--- Aquí se usa la librería importada
+	// --------------------------------------------------------
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong - El servidor dental está vivo 🦷"})
@@ -77,8 +85,6 @@ func main() {
 		// Rutas Historia Clínica
 		v1.POST("/medical-history", historyHdl.Create)
 		v1.GET("/patients/:patientId/medical-history", historyHdl.GetByPatient)
-
-		// === NUEVA RUTA PARA PDF ===
 		v1.GET("/patients/:patientId/medical-history/pdf", historyHdl.DownloadPDF)
 	}
 
