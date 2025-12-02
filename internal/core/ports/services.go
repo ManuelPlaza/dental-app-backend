@@ -17,3 +17,11 @@ type AppointmentService interface {
 	Cancel(id uint) error
 	List() ([]domain.Appointment, error) // <--- ¡ESTA FALTABA!
 }
+
+// ... (interfaces anteriores)
+
+type PaymentService interface {
+	Process(payment *domain.Payment) error
+	List() ([]domain.Payment, error) // <--- NUEVO
+	GetBalance(appID uint) (float64, float64, float64, error)
+}

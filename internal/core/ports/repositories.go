@@ -15,3 +15,11 @@ type AppointmentRepository interface {
 	Update(appointment *domain.Appointment) error // <--- NUEVO
 	GetAll() ([]domain.Appointment, error)        // <--- ¡ESTA FALTABA!
 }
+
+// ... (interfaces anteriores)
+
+type PaymentRepository interface {
+	Save(payment *domain.Payment) error
+	GetAll() ([]domain.Payment, error) // <--- NUEVO
+	GetByAppointmentID(appID uint) ([]domain.Payment, error)
+}
