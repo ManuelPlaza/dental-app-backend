@@ -25,3 +25,7 @@ type PaymentService interface {
 	List() ([]domain.Payment, error) // <--- NUEVO
 	GetBalance(appID uint) (float64, float64, float64, error)
 }
+type MedicalHistoryService interface {
+	Create(history *domain.MedicalHistory) error
+	GetHistoryByPatient(patientID uint) ([]domain.MedicalHistory, error)
+}
