@@ -72,3 +72,7 @@
 2025-12-01 23:29:42.719 UTC [14822] STATEMENT:  SELECT * FROM "patients" WHERE "patients"."id" = $1
 2025-12-01 23:32:30.728 UTC [14822] ERROR:  relation "patients" does not exist at character 15
 2025-12-01 23:32:30.728 UTC [14822] STATEMENT:  SELECT * FROM "patients" WHERE "patients"."id" = $1
+2025-12-02 00:16:14.557 UTC [16346] ERROR:  column "modification_count" of relation "Appointments" does not exist at character 123
+2025-12-02 00:16:14.557 UTC [16346] STATEMENT:  INSERT INTO "Appointments" ("patient_id","specialist_id","service_id","start_time","end_time","status","historical_price","modification_count","created_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING "id"
+2025-12-02 00:19:39.624 UTC [2164] LOG:  checkpoint starting: time
+2025-12-02 00:19:41.927 UTC [2164] LOG:  checkpoint complete: wrote 22 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.190 s, sync=0.008 s, total=2.303 s; sync files=21, longest=0.006 s, average=0.001 s; distance=41 kB, estimate=41 kB
