@@ -6,8 +6,7 @@ channel = "stable-24.05"; # <--- La versión que te pedí poner
     pkgs.go
     pkgs.postgresql
     pkgs.lsof
-    # --- CONFIGURACIÓN DE FLUTTER QUE FUERZA UNA INSTALACIÓN LIMPIA ---
-    (pkgs.flutter.override { enableStableChannel = true; })
+    pkgs.flutter
     pkgs.dart
     pkgs.cmake
     pkgs.ninja
