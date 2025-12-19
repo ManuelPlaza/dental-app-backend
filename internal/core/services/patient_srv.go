@@ -3,7 +3,6 @@ package services
 import (
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
-	"errors"
 )
 
 type patientService struct{ repo ports.PatientRepository }
@@ -13,7 +12,7 @@ func NewPatientService(repo ports.PatientRepository) ports.PatientService {
 }
 func (s *patientService) Create(patient *domain.Patient) error {
 	if patient.DocumentNumber == "" {
-		return errors.New("documento obligatorio")
+		return domain.ErrDocumentRequired
 	}
 	return s.repo.Save(patient)
 }
