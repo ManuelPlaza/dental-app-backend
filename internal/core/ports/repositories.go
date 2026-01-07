@@ -27,3 +27,10 @@ type MedicalHistoryRepository interface {
 	Save(history *domain.MedicalHistory) error
 	GetByPatientID(patientID uint) ([]domain.MedicalHistory, error)
 }
+
+type SpecialistRepository interface {
+	Save(s *domain.Specialist) error
+	GetAll() ([]domain.Specialist, error)
+	Inactivate(id uint) error
+	ExistsByID(id uint) (bool, error)
+}

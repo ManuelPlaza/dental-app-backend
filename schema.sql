@@ -109,13 +109,20 @@ CREATE TABLE "LoyaltyTransactions" (
 ALTER TABLE "Services" ADD CONSTRAINT "services_category_fk" FOREIGN KEY ("category_id") REFERENCES "ServiceCategories"("id");
 ALTER TABLE "Patient" ADD CONSTRAINT "patient_user_fk" FOREIGN KEY ("user_id") REFERENCES "Users"("id");
 ALTER TABLE "Patient" ADD CONSTRAINT "patient_referral_fk" FOREIGN KEY ("referred_by_id") REFERENCES "Patient"("id");
+ALTER TABLE "Patient" ADD COLUMN  phone VARCHAR(50);
+ALTER TABLE "Patient" ADD COLUMN  first_name VARCHAR(255);
+ALTER TABLE "Patient" ADD COLUMN  last_name VARCHAR(255);
+ALTER TABLE "Patient" ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE "Specialists" ADD CONSTRAINT "specialists_user_fk" FOREIGN KEY ("user_id") REFERENCES "Users"("id");
 
+ALTER TABLE "Appointments" ADD COLUMN  modification_count INTEGER DEFAULT 0;
 ALTER TABLE "Appointments" ADD CONSTRAINT "appointments_patient_fk" FOREIGN KEY ("patient_id") REFERENCES "Patient"("id");
 ALTER TABLE "Appointments" ADD CONSTRAINT "appointments_specialist_fk" FOREIGN KEY ("specialist_id") REFERENCES "Specialists"("id");
 ALTER TABLE "Appointments" ADD CONSTRAINT "appointments_service_fk" FOREIGN KEY ("service_id") REFERENCES "Services"("id");
 
 ALTER TABLE "Payments" ADD CONSTRAINT "payments_appointment_fk" FOREIGN KEY ("appointment_id") REFERENCES "Appointments"("id");
+ALTER TABLE "Payments" ADD COLUMN  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "Payments" ADD COLUMN  status VARCHAR(50) DEFAULT 'completed'; -- completed, refunded
 
 ALTER TABLE "MedicalHistory" ADD CONSTRAINT "medical_patient_fk" FOREIGN KEY ("patient_id") REFERENCES "Patient"("id");
 ALTER TABLE "MedicalHistory" ADD CONSTRAINT "medical_appointment_fk" FOREIGN KEY ("appointment_id") REFERENCES "Appointments"("id");

@@ -22,6 +22,7 @@ type Appointment struct {
 	HistoricalPrice   float64   `json:"historical_price"`
 	ModificationCount int       `json:"modification_count"`
 	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 func (Appointment) TableName() string {

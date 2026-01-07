@@ -26,6 +26,7 @@ func (r *gormMedicalHistoryRepo) GetByPatientID(patientID uint) ([]domain.Medica
 	// Traemos la Historia -> La Cita -> El Especialista -> El Usuario (Nombre del doctor)
 	err := r.db.Table("\"MedicalHistory\"").
 		Preload("Appointment").
+		Preload("Appointment.Patient").
 		Preload("Appointment.Specialist").
 		Where("patient_id = ?", patientID).
 		Order("created_at desc"). // Lo más reciente primero

@@ -29,3 +29,9 @@ type MedicalHistoryService interface {
 	Create(history *domain.MedicalHistory) error
 	GetHistoryByPatient(patientID uint) ([]domain.MedicalHistory, error)
 }
+
+type SpecialistService interface {
+	Create(s *domain.Specialist) error
+	List() ([]domain.Specialist, error)
+	Inactivate(id uint) error
+}

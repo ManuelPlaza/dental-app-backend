@@ -50,6 +50,11 @@ func main() {
 	historySrv := services.NewMedicalHistoryService(historyRepo)
 	historyHdl := handler.NewMedicalHistoryHandler(historySrv)
 
+	// --- MÓDULO 5: ESPECIALISTAS ---
+	specialistRepo := repository.NewGormSpecialistRepo(db)
+	specialistSrv := services.NewSpecialistService(specialistRepo)
+	specialistHdl := handler.NewSpecialistHandler(specialistSrv)
+
 	// 4. Configurar Router (Gin)
 	r := gin.Default()
 
@@ -86,6 +91,11 @@ func main() {
 		v1.POST("/medical-history", historyHdl.Create)
 		v1.GET("/patients/:patientId/medical-history", historyHdl.GetByPatient)
 		v1.GET("/patients/:patientId/medical-history/pdf", historyHdl.DownloadPDF)
+
+		// Rutas Especialistas
+		v1.POST("/specialists", specialistHdl.Create)
+		v1.GET("/specialists", specialistHdl.GetAll)
+		v1.PATCH("/specialists/:id/inactivate", specialistHdl.Inactivate)
 	}
 
 	// 5. Correr Servidor
