@@ -16,8 +16,8 @@ func NewGormAppointmentRepo(db *gorm.DB) ports.AppointmentRepository {
 }
 
 func (r *gormAppointmentRepo) Save(app *domain.Appointment) error {
-	// OJO AQUÍ: Usamos comillas escapadas porque DrawSQL creó la tabla como "Appointments"
-	return r.db.Table("\"Appointments\"").Create(app).Error
+	// Omit evita que GORM intente manejar las asociaciones anidadas
+	return r.db.Table("\"Appointments\"").Omit("Patient", "Specialist").Create(app).Error
 }
 
 // ... (código existente)

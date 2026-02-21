@@ -21,6 +21,7 @@ type Appointment struct {
 	Status            string    `json:"status"`
 	HistoricalPrice   float64   `json:"historical_price"`
 	ModificationCount int       `json:"modification_count"`
+	Notes             string    `json:"notes"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
 }

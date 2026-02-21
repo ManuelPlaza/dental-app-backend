@@ -37,7 +37,7 @@ func main() {
 
 	// --- MÓDULO 2: CITAS (Agenda) ---
 	appointRepo := repository.NewGormAppointmentRepo(db)
-	appointSrv := services.NewAppointmentService(appointRepo)
+	appointSrv := services.NewAppointmentService(appointRepo, patientRepo)
 	appointHdl := handler.NewAppointmentHandler(appointSrv)
 
 	// --- MÓDULO 3: PAGOS (Caja) ---
@@ -54,6 +54,11 @@ func main() {
 	specialistRepo := repository.NewGormSpecialistRepo(db)
 	specialistSrv := services.NewSpecialistService(specialistRepo)
 	specialistHdl := handler.NewSpecialistHandler(specialistSrv)
+
+	// --- MÓDULO 6: SERVICIOS ---
+	serviceRepo := repository.NewGormServiceRepo(db)
+	serviceSrv := services.NewServiceService(serviceRepo)
+	serviceHdl := handler.NewServiceHandler(serviceSrv)
 
 	// 4. Configurar Router (Gin)
 	r := gin.Default()
@@ -75,6 +80,7 @@ func main() {
 		// Rutas Pacientes
 		v1.POST("/patients", patientHdl.Create)
 		v1.GET("/patients", patientHdl.GetAll)
+		v1.GET("/patients/document/:document_number", patientHdl.FindByDocument)
 
 		// Rutas Citas
 		v1.POST("/appointments", appointHdl.Create)
@@ -96,6 +102,10 @@ func main() {
 		v1.POST("/specialists", specialistHdl.Create)
 		v1.GET("/specialists", specialistHdl.GetAll)
 		v1.PATCH("/specialists/:id/inactivate", specialistHdl.Inactivate)
+
+		// Rutas Servicios
+		v1.GET("/services", serviceHdl.GetAll)
+
 	}
 
 	// 5. Correr Servidor

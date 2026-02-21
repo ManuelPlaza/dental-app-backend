@@ -113,12 +113,16 @@ ALTER TABLE "Patient" ADD COLUMN  phone VARCHAR(50);
 ALTER TABLE "Patient" ADD COLUMN  first_name VARCHAR(255);
 ALTER TABLE "Patient" ADD COLUMN  last_name VARCHAR(255);
 ALTER TABLE "Patient" ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "Patient" ADD COLUMN email VARCHAR(255);
+
 ALTER TABLE "Specialists" ADD CONSTRAINT "specialists_user_fk" FOREIGN KEY ("user_id") REFERENCES "Users"("id");
 
 ALTER TABLE "Appointments" ADD COLUMN  modification_count INTEGER DEFAULT 0;
+ALTER TABLE "Appointments" ADD COLUMN notes TEXT;
 ALTER TABLE "Appointments" ADD CONSTRAINT "appointments_patient_fk" FOREIGN KEY ("patient_id") REFERENCES "Patient"("id");
 ALTER TABLE "Appointments" ADD CONSTRAINT "appointments_specialist_fk" FOREIGN KEY ("specialist_id") REFERENCES "Specialists"("id");
 ALTER TABLE "Appointments" ADD CONSTRAINT "appointments_service_fk" FOREIGN KEY ("service_id") REFERENCES "Services"("id");
+
 
 ALTER TABLE "Payments" ADD CONSTRAINT "payments_appointment_fk" FOREIGN KEY ("appointment_id") REFERENCES "Appointments"("id");
 ALTER TABLE "Payments" ADD COLUMN  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;

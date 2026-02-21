@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrDocumentRequired        = errors.New("document_number is required")
 	ErrPatientAlreadyExists    = errors.New("patient already exists")
+	ErrPatientNotFound         = errors.New("patient not found") // <--- NUEVO
 	ErrInvalidPayload          = errors.New("invalid payload")
 	ErrSpecialistNotFound      = errors.New("specialist not found")
 	ErrSpecialistInactive      = errors.New("specialist is inactive")

@@ -7,6 +7,7 @@ type Patient struct {
 	FirstName                    string    `json:"first_name"`
 	LastName                     string    `json:"last_name"`
 	DocumentNumber               string    `json:"document_number"`
+	Email                        string    `json:"email" gorm:"column:email"`
 	Phone                        string    `json:"phone"`
 	EmergencyContactName         string    `json:"emergency_contact_name"`
 	EmergencyContactRelationship string    `json:"emergency_contact_relationship"`

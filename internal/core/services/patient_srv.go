@@ -19,3 +19,8 @@ func (s *patientService) Create(patient *domain.Patient) error {
 func (s *patientService) List() ([]domain.Patient, error) {
 	return s.repo.GetAll()
 }
+
+// FindByDocument busca un paciente por número de documento
+func (s *patientService) FindByDocument(documentNumber string) (*domain.Patient, error) {
+	return s.repo.FindByDocumentNumber(documentNumber)
+}

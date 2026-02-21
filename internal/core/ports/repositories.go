@@ -6,6 +6,7 @@ import "dental-app/internal/core/domain"
 type PatientRepository interface {
 	Save(patient *domain.Patient) error
 	GetAll() ([]domain.Patient, error)
+	FindByDocumentNumber(doc string) (*domain.Patient, error)
 }
 
 // ... (al final del archivo)
@@ -33,4 +34,8 @@ type SpecialistRepository interface {
 	GetAll() ([]domain.Specialist, error)
 	Inactivate(id uint) error
 	ExistsByID(id uint) (bool, error)
+}
+
+type ServiceRepository interface {
+	GetAll() ([]domain.Service, error)
 }

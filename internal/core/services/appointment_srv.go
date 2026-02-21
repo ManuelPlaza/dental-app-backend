@@ -9,12 +9,13 @@ import (
 
 // 1. DEFINICIÓN DE LA ESTRUCTURA (Esto es lo que te faltaba)
 type appointmentService struct {
-	repo ports.AppointmentRepository
+	repo        ports.AppointmentRepository
+	patientRepo ports.PatientRepository // <--- debe estar esta línea
 }
 
 // 2. CONSTRUCTOR
-func NewAppointmentService(repo ports.AppointmentRepository) ports.AppointmentService {
-	return &appointmentService{repo: repo}
+func NewAppointmentService(repo ports.AppointmentRepository, patientRepo ports.PatientRepository) ports.AppointmentService {
+	return &appointmentService{repo: repo, patientRepo: patientRepo}
 }
 
 // 3. MÉTODO AGENDAR (Schedule)
@@ -22,6 +23,25 @@ func (s *appointmentService) Schedule(app *domain.Appointment) error {
 	// Regla: Hora fin debe ser después de hora inicio
 	if app.EndTime.Before(app.StartTime) {
 		return errors.New("la hora de fin no puede ser antes de la hora de inicio")
+	}
+
+	// Si no viene patient_id, buscar o crear paciente por documento
+	if app.PatientID == 0 {
+		if app.Patient.DocumentNumber == "" {
+			return errors.New("debes enviar patient_id o los datos del paciente con document_number")
+		}
+
+		existing, err := s.patientRepo.FindByDocumentNumber(app.Patient.DocumentNumber)
+		if err != nil {
+			// No existe → crearlo con user_id NULL (sin cuenta web)
+			if err := s.patientRepo.Save(&app.Patient); err != nil {
+				return errors.New("error creando paciente: " + err.Error())
+			}
+		} else {
+			// Ya existe → reutilizarlo
+			app.Patient = *existing
+		}
+		app.PatientID = app.Patient.ID // <--- Esta línea es la clave
 	}
 
 	// Estado por defecto

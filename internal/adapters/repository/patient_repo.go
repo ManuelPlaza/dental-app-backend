@@ -35,3 +35,13 @@ func (r *gormPatientRepo) GetAll() ([]domain.Patient, error) {
 	err := r.db.Table("\"Patient\"").Find(&patients).Error
 	return patients, err
 }
+
+// FindByDocumentNumber busca un paciente por número de documento
+func (r *gormPatientRepo) FindByDocumentNumber(doc string) (*domain.Patient, error) {
+	var patient domain.Patient
+	err := r.db.Table("\"Patient\"").Where("document_number = ?", doc).First(&patient).Error
+	if err != nil {
+		return nil, err
+	}
+	return &patient, nil
+}
