@@ -16,7 +16,11 @@ type AppointmentService interface {
 	Schedule(appointment *domain.Appointment) error
 	Modify(id uint, newStart, newEnd time.Time) error
 	Cancel(id uint) error
-	List() ([]domain.Appointment, error) // <--- ¡ESTA FALTABA!
+	List() ([]domain.Appointment, error)
+	AdminUpdateStatus(id uint, status string) error
+	ListPaginated(page, limit int, status string) ([]domain.Appointment, int64, error) // <--- status agregado
+	GetSummary() (map[string]int64, error)                                             // <--- NUEVO
+	AdminUpdate(id uint, req domain.AdminUpdateRequest) error                          // <--- NUEVO
 }
 
 // ... (interfaces anteriores)

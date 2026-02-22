@@ -26,6 +26,15 @@ type Appointment struct {
 	UpdatedAt         time.Time `json:"updated_at"`
 }
 
+// AdminUpdateRequest estructura para actualización admin sin restricciones
+type AdminUpdateRequest struct {
+	Status       string     `json:"status"`
+	SpecialistID *uint      `json:"specialist_id"`
+	ServiceID    *uint      `json:"service_id"`
+	StartTime    *time.Time `json:"start_time"`
+	EndTime      *time.Time `json:"end_time"`
+}
+
 func (Appointment) TableName() string {
 	return "\"Appointments\""
 }

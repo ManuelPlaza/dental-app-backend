@@ -83,10 +83,14 @@ func main() {
 		v1.GET("/patients/document/:document_number", patientHdl.FindByDocument)
 
 		// Rutas Citas
+		// Rutas Citas
 		v1.POST("/appointments", appointHdl.Create)
 		v1.GET("/appointments", appointHdl.GetAll)
+		v1.GET("/appointments/paginated", appointHdl.GetPaginated)
+		v1.GET("/appointments/summary", appointHdl.GetSummary) // <--- NUEVO
 		v1.PUT("/appointments/:id", appointHdl.Modify)
 		v1.PATCH("/appointments/:id/cancel", appointHdl.Cancel)
+		v1.PUT("/admin/appointments/:id", appointHdl.AdminUpdate) // <--- Reemplaza AdminUpdateStatus
 
 		// Rutas Pagos
 		v1.POST("/payments", payHdl.Create)

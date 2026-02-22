@@ -12,9 +12,11 @@ type PatientRepository interface {
 // ... (al final del archivo)
 type AppointmentRepository interface {
 	Save(appointment *domain.Appointment) error
-	GetByID(id uint) (*domain.Appointment, error) // <--- NUEVO
-	Update(appointment *domain.Appointment) error // <--- NUEVO
-	GetAll() ([]domain.Appointment, error)        // <--- ¡ESTA FALTABA!
+	GetByID(id uint) (*domain.Appointment, error)
+	Update(appointment *domain.Appointment) error
+	GetAll() ([]domain.Appointment, error)
+	GetPaginated(page, limit int, status string) ([]domain.Appointment, int64, error) // <--- status agregado
+	GetSummary() (map[string]int64, error)
 }
 
 // ... (interfaces anteriores)

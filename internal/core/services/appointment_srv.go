@@ -98,3 +98,78 @@ func (s *appointmentService) Cancel(id uint) error {
 func (s *appointmentService) List() ([]domain.Appointment, error) {
 	return s.repo.GetAll()
 }
+
+// 6. MÉTODO ADMIN: Cambiar estado sin restricciones
+func (s *appointmentService) AdminUpdateStatus(id uint, status string) error {
+	// Validar que el status sea un valor permitido
+	validStatuses := map[string]bool{
+		"pending":   true,
+		"scheduled": true,
+		"completed": true,
+		"cancelled": true,
+	}
+	if !validStatuses[status] {
+		return errors.New("estado inválido, valores permitidos: pending, scheduled, completed, cancelled")
+	}
+
+	app, err := s.repo.GetByID(id)
+	if err != nil {
+		return errors.New("cita no encontrada")
+	}
+
+	// Sin validación de modification_count ni tiempo
+	app.Status = status
+	return s.repo.Update(app)
+}
+
+// 7. MÉTODO LISTAR PAGINADO
+func (s *appointmentService) ListPaginated(page, limit int, status string) ([]domain.Appointment, int64, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 || limit > 50 {
+		limit = 10
+	}
+	return s.repo.GetPaginated(page, limit, status)
+}
+
+// GetSummary retorna conteos para las cards
+func (s *appointmentService) GetSummary() (map[string]int64, error) {
+	return s.repo.GetSummary()
+}
+
+// AdminUpdate actualiza cualquier campo sin restricciones
+func (s *appointmentService) AdminUpdate(id uint, req domain.AdminUpdateRequest) error {
+	validStatuses := map[string]bool{
+		"pending": true, "scheduled": true,
+		"completed": true, "cancelled": true,
+	}
+
+	if req.Status != "" && !validStatuses[req.Status] {
+		return errors.New("estado inválido: pending, scheduled, completed, cancelled")
+	}
+
+	app, err := s.repo.GetByID(id)
+	if err != nil {
+		return errors.New("cita no encontrada")
+	}
+
+	// Actualizar solo los campos que vienen en el request
+	if req.Status != "" {
+		app.Status = req.Status
+	}
+	if req.SpecialistID != nil {
+		app.SpecialistID = *req.SpecialistID
+	}
+	if req.ServiceID != nil {
+		app.ServiceID = *req.ServiceID
+	}
+	if req.StartTime != nil {
+		app.StartTime = *req.StartTime
+	}
+	if req.EndTime != nil {
+		app.EndTime = *req.EndTime
+	}
+
+	return s.repo.Update(app)
+}

@@ -97,3 +97,111 @@ func (h *AppointmentHandler) GetAll(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, apps)
 }
+
+// --- 4. ADMIN: CAMBIAR ESTADO SIN RESTRICCIONES (PUT) ---
+type AdminUpdateStatusRequest struct {
+	Status string `json:"status" binding:"required"`
+}
+
+func (h *AppointmentHandler) AdminUpdateStatus(c *gin.Context) {
+	// A. Leer el ID de la URL
+	idStr := c.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de cita inválido"})
+		return
+	}
+	id := uint(id64)
+
+	// B. Leer el nuevo status del body
+	var req AdminUpdateStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido: " + err.Error()})
+		return
+	}
+
+	// C. Llamar al servicio sin restricciones
+	if err := h.service.AdminUpdateStatus(id, req.Status); err != nil {
+		if err.Error() == "cita no encontrada" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Estado actualizado correctamente"})
+}
+
+// --- 5. LISTAR CITAS PAGINADAS (GET) ---
+// GetPaginated ahora soporta ?status=pending
+func (h *AppointmentHandler) GetPaginated(c *gin.Context) {
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "10")
+	status := c.DefaultQuery("status", "") // <--- NUEVO
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page <= 0 {
+		page = 1
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+
+	apps, total, err := h.service.ListPaginated(page, limit, status)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	totalPages := int(total) / limit
+	if int(total)%limit != 0 {
+		totalPages++
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":        apps,
+		"total":       total,
+		"page":        page,
+		"limit":       limit,
+		"total_pages": totalPages,
+	})
+}
+
+// GetSummary retorna conteos para las cards
+func (h *AppointmentHandler) GetSummary(c *gin.Context) {
+	summary, err := h.service.GetSummary()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, summary)
+}
+
+// AdminUpdate actualiza cualquier campo sin restricciones
+func (h *AppointmentHandler) AdminUpdate(c *gin.Context) {
+	idStr := c.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de cita inválido"})
+		return
+	}
+
+	var req domain.AdminUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido: " + err.Error()})
+		return
+	}
+
+	if err := h.service.AdminUpdate(uint(id64), req); err != nil {
+		if err.Error() == "cita no encontrada" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Cita actualizada correctamente"})
+}
