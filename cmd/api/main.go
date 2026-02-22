@@ -35,9 +35,14 @@ func main() {
 	patientSrv := services.NewPatientService(patientRepo)
 	patientHdl := handler.NewPatientHandler(patientSrv)
 
+	// --- MÓDULO 6: SERVICIOS ---
+	serviceRepo := repository.NewGormServiceRepo(db)
+	serviceSrv := services.NewServiceService(serviceRepo)
+	serviceHdl := handler.NewServiceHandler(serviceSrv)
+
 	// --- MÓDULO 2: CITAS (Agenda) ---
 	appointRepo := repository.NewGormAppointmentRepo(db)
-	appointSrv := services.NewAppointmentService(appointRepo, patientRepo)
+	appointSrv := services.NewAppointmentService(appointRepo, patientRepo, serviceRepo)
 	appointHdl := handler.NewAppointmentHandler(appointSrv)
 
 	// --- MÓDULO 3: PAGOS (Caja) ---
@@ -54,11 +59,6 @@ func main() {
 	specialistRepo := repository.NewGormSpecialistRepo(db)
 	specialistSrv := services.NewSpecialistService(specialistRepo)
 	specialistHdl := handler.NewSpecialistHandler(specialistSrv)
-
-	// --- MÓDULO 6: SERVICIOS ---
-	serviceRepo := repository.NewGormServiceRepo(db)
-	serviceSrv := services.NewServiceService(serviceRepo)
-	serviceHdl := handler.NewServiceHandler(serviceSrv)
 
 	// 4. Configurar Router (Gin)
 	r := gin.Default()
@@ -81,6 +81,7 @@ func main() {
 		v1.POST("/patients", patientHdl.Create)
 		v1.GET("/patients", patientHdl.GetAll)
 		v1.GET("/patients/document/:document_number", patientHdl.FindByDocument)
+		v1.PUT("/patients/:id", patientHdl.Update) // <--- NUEVA
 
 		// Rutas Citas
 		// Rutas Citas
@@ -104,8 +105,10 @@ func main() {
 
 		// Rutas Especialistas
 		v1.POST("/specialists", specialistHdl.Create)
+		v1.GET("/specialists/without-user", specialistHdl.GetWithoutUser) // <--- NUEVO
 		v1.GET("/specialists", specialistHdl.GetAll)
 		v1.PATCH("/specialists/:id/inactivate", specialistHdl.Inactivate)
+		v1.PATCH("/specialists/:id/activate", specialistHdl.Activate)
 
 		// Rutas Servicios
 		v1.GET("/services", serviceHdl.GetAll)

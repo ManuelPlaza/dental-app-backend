@@ -11,18 +11,32 @@ import (
 type appointmentService struct {
 	repo        ports.AppointmentRepository
 	patientRepo ports.PatientRepository // <--- debe estar esta línea
+	serviceRepo ports.ServiceRepository
 }
 
 // 2. CONSTRUCTOR
-func NewAppointmentService(repo ports.AppointmentRepository, patientRepo ports.PatientRepository) ports.AppointmentService {
-	return &appointmentService{repo: repo, patientRepo: patientRepo}
+func NewAppointmentService(repo ports.AppointmentRepository, patientRepo ports.PatientRepository, serviceRepo ports.ServiceRepository) ports.AppointmentService {
+	return &appointmentService{repo: repo, patientRepo: patientRepo, serviceRepo: serviceRepo}
 }
 
-// 3. MÉTODO AGENDAR (Schedule)
+// 3. MÉTODO AGENDAR (Schedule) — con validación de horarios
 func (s *appointmentService) Schedule(app *domain.Appointment) error {
 	// Regla: Hora fin debe ser después de hora inicio
 	if app.EndTime.Before(app.StartTime) {
 		return errors.New("la hora de fin no puede ser antes de la hora de inicio")
+	}
+
+	// Regla: Validar horarios de atención
+	if err := validBusinessHours(app.StartTime); err != nil {
+		return err
+	}
+	if err := validBusinessHours(app.EndTime); err != nil {
+		return err
+	}
+
+	// Regla: No se puede agendar en el pasado
+	if app.StartTime.Before(time.Now()) {
+		return errors.New("no puedes agendar una cita en una fecha y hora pasada")
 	}
 
 	// Si no viene patient_id, buscar o crear paciente por documento
@@ -33,15 +47,32 @@ func (s *appointmentService) Schedule(app *domain.Appointment) error {
 
 		existing, err := s.patientRepo.FindByDocumentNumber(app.Patient.DocumentNumber)
 		if err != nil {
-			// No existe → crearlo con user_id NULL (sin cuenta web)
 			if err := s.patientRepo.Save(&app.Patient); err != nil {
 				return errors.New("error creando paciente: " + err.Error())
 			}
 		} else {
-			// Ya existe → reutilizarlo
 			app.Patient = *existing
 		}
-		app.PatientID = app.Patient.ID // <--- Esta línea es la clave
+		app.PatientID = app.Patient.ID
+	}
+
+	// Regla: Verificar conflicto de especialista
+	if app.SpecialistID != 0 {
+		conflict, err := s.repo.HasSpecialistConflict(app.SpecialistID, app.StartTime, app.EndTime, 0)
+		if err != nil {
+			return errors.New("error verificando disponibilidad del especialista")
+		}
+		if conflict {
+			return errors.New("el especialista ya tiene una cita programada en ese horario")
+		}
+	}
+
+	// Guardar precio histórico del servicio
+	if app.ServiceID != 0 && app.HistoricalPrice == 0 {
+		service, err := s.serviceRepo.GetByID(app.ServiceID)
+		if err == nil {
+			app.HistoricalPrice = service.Price
+		}
 	}
 
 	// Estado por defecto
@@ -138,7 +169,7 @@ func (s *appointmentService) GetSummary() (map[string]int64, error) {
 	return s.repo.GetSummary()
 }
 
-// AdminUpdate actualiza cualquier campo sin restricciones
+// AdminUpdate — con todas las reglas de negocio para el admin
 func (s *appointmentService) AdminUpdate(id uint, req domain.AdminUpdateRequest) error {
 	validStatuses := map[string]bool{
 		"pending": true, "scheduled": true,
@@ -154,7 +185,43 @@ func (s *appointmentService) AdminUpdate(id uint, req domain.AdminUpdateRequest)
 		return errors.New("cita no encontrada")
 	}
 
-	// Actualizar solo los campos que vienen en el request
+	// Regla: Las citas completadas o canceladas no se pueden modificar
+	if app.Status == "completed" || app.Status == "cancelled" {
+		return errors.New("no se puede modificar una cita " + app.Status)
+	}
+
+	// Regla: La nueva fecha no puede ser en el pasado
+	if req.StartTime != nil && req.StartTime.Before(time.Now()) {
+		return errors.New("no puedes reprogramar una cita a una fecha y hora pasada")
+	}
+
+	// Determinar el start_time a usar para validaciones
+	startTime := app.StartTime
+	endTime := app.EndTime
+	if req.StartTime != nil {
+		startTime = *req.StartTime
+	}
+	if req.EndTime != nil {
+		endTime = *req.EndTime
+	}
+
+	// Regla: Verificar conflicto de especialista si cambia especialista o fechas
+	specialistID := app.SpecialistID
+	if req.SpecialistID != nil {
+		specialistID = *req.SpecialistID
+	}
+
+	if req.SpecialistID != nil || req.StartTime != nil || req.EndTime != nil {
+		conflict, err := s.repo.HasSpecialistConflict(specialistID, startTime, endTime, id)
+		if err != nil {
+			return errors.New("error verificando disponibilidad del especialista")
+		}
+		if conflict {
+			return errors.New("el especialista ya tiene una cita programada en ese horario")
+		}
+	}
+
+	// Aplicar cambios
 	if req.Status != "" {
 		app.Status = req.Status
 	}
@@ -172,4 +239,32 @@ func (s *appointmentService) AdminUpdate(id uint, req domain.AdminUpdateRequest)
 	}
 
 	return s.repo.Update(app)
+}
+
+// Helper: validar horarios de atención
+func validBusinessHours(t time.Time) error {
+	weekday := t.Weekday()
+	hour := t.Hour()
+	minute := t.Minute()
+	timeInMinutes := hour*60 + minute
+
+	// Domingo → cerrado
+	if weekday == time.Sunday {
+		return errors.New("no atendemos los domingos")
+	}
+
+	// Sábado → 8am a 12pm
+	if weekday == time.Saturday {
+		if timeInMinutes < 8*60 || timeInMinutes >= 12*60 {
+			return errors.New("los sábados atendemos de 8:00 a.m. a 12:00 p.m.")
+		}
+		return nil
+	}
+
+	// Lunes a Viernes → 8am a 6pm
+	if timeInMinutes < 8*60 || timeInMinutes >= 18*60 {
+		return errors.New("el horario de atención es de 8:00 a.m. a 6:00 p.m.")
+	}
+
+	return nil
 }

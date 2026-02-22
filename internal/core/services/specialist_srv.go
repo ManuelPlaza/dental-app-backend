@@ -50,3 +50,9 @@ func (s *specialistService) Inactivate(id uint) error {
 
 	return s.repo.Inactivate(id)
 }
+func (s *specialistService) GetWithoutUser() ([]domain.Specialist, error) {
+	return s.repo.GetWithoutUser()
+}
+func (s *specialistService) Activate(id uint) error {
+	return s.repo.Activate(id)
+}

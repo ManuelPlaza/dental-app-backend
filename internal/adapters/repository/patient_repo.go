@@ -45,3 +45,14 @@ func (r *gormPatientRepo) FindByDocumentNumber(doc string) (*domain.Patient, err
 	}
 	return &patient, nil
 }
+
+// Update actualiza solo los campos permitidos del paciente
+func (r *gormPatientRepo) Update(id uint, patient *domain.Patient) error {
+	return r.db.Table("\"Patient\"").Where("id = ?", id).Updates(map[string]interface{}{
+		"phone":                          patient.Phone,
+		"email":                          patient.Email,
+		"emergency_contact_name":         patient.EmergencyContactName,
+		"emergency_contact_relationship": patient.EmergencyContactRelationship,
+		"emergency_contact_phone":        patient.EmergencyContactPhone,
+	}).Error
+}

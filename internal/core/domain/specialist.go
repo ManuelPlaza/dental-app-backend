@@ -4,7 +4,7 @@ import "time"
 
 type Specialist struct {
 	ID            uint      `json:"id"`
-	UserID        uint      `json:"user_id"`
+	UserID        *uint     `json:"user_id"` // ← *uint permite NULL
 	FirstName     string    `json:"first_name"`
 	LastName      string    `json:"last_name"`
 	Specialty     string    `json:"specialty"`

@@ -3,6 +3,7 @@ package repository
 import (
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -95,4 +96,17 @@ func (r *gormAppointmentRepo) GetSummary() (map[string]int64, error) {
 	}
 
 	return summary, nil
+}
+
+// HasSpecialistConflict verifica si el especialista ya tiene cita en ese horario
+func (r *gormAppointmentRepo) HasSpecialistConflict(specialistID uint, start, end time.Time, excludeID uint) (bool, error) {
+	var count int64
+	err := r.db.Table("\"Appointments\"").
+		Where("specialist_id = ?", specialistID).
+		Where("id != ?", excludeID). // Excluir la cita actual al editar
+		Where("status IN ?", []string{"pending", "scheduled"}).
+		Where("start_time < ? AND end_time > ?", end, start). // Solapamiento
+		Count(&count).Error
+
+	return count > 0, err
 }

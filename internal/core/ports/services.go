@@ -9,7 +9,8 @@ import (
 type PatientService interface {
 	Create(patient *domain.Patient) error
 	List() ([]domain.Patient, error)
-	FindByDocument(documentNumber string) (*domain.Patient, error) // <--- NUEVO
+	FindByDocument(documentNumber string) (*domain.Patient, error)
+	Update(id uint, patient *domain.Patient) error // <--- NUEVO
 }
 
 type AppointmentService interface {
@@ -39,6 +40,8 @@ type SpecialistService interface {
 	Create(s *domain.Specialist) error
 	List() ([]domain.Specialist, error)
 	Inactivate(id uint) error
+	Activate(id uint) error
+	GetWithoutUser() ([]domain.Specialist, error) // <--- NUEVO
 }
 
 type ServiceService interface {

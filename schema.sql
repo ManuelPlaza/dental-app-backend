@@ -116,6 +116,7 @@ ALTER TABLE "Patient" ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE "Patient" ADD COLUMN email VARCHAR(255);
 
 ALTER TABLE "Specialists" ADD CONSTRAINT "specialists_user_fk" FOREIGN KEY ("user_id") REFERENCES "Users"("id");
+ALTER TABLE "Specialists" ALTER COLUMN "user_id" DROP NOT NULL;
 
 ALTER TABLE "Appointments" ADD COLUMN  modification_count INTEGER DEFAULT 0;
 ALTER TABLE "Appointments" ADD COLUMN notes TEXT;

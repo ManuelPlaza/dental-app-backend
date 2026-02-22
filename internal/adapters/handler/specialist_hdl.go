@@ -71,3 +71,28 @@ func (h *SpecialistHandler) Inactivate(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "specialist inactivated"})
 }
+
+// GetWithoutUser maneja GET /specialists/without-user
+func (h *SpecialistHandler) GetWithoutUser(c *gin.Context) {
+	list, err := h.service.GetWithoutUser()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, list)
+}
+func (h *SpecialistHandler) Activate(c *gin.Context) {
+	idStr := c.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil || id64 == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id inválido"})
+		return
+	}
+
+	if err := h.service.Activate(uint(id64)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "specialist activated"})
+}

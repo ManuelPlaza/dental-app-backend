@@ -5,7 +5,7 @@ import (
 	"dental-app/internal/core/ports"
 	"errors"
 	"net/http"
-
+	"strconv"
 	"github.com/gin-gonic/gin"
 )
 
@@ -65,4 +65,27 @@ func (h *PatientHandler) FindByDocument(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, patient)
+}
+
+// Update maneja PUT /patients/:id
+func (h *PatientHandler) Update(c *gin.Context) {
+	idStr := c.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de paciente inválido"})
+		return
+	}
+
+	var p domain.Patient
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido"})
+		return
+	}
+
+	if err := h.service.Update(uint(id64), &p); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Paciente actualizado correctamente"})
 }

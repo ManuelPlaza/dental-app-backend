@@ -57,3 +57,15 @@ func (r *gormSpecialistRepo) Inactivate(id uint) error {
 	}
 	return nil
 }
+
+// GetWithoutUser retorna especialistas que no tienen usuario asociado
+func (r *gormSpecialistRepo) GetWithoutUser() ([]domain.Specialist, error) {
+	var specialists []domain.Specialist
+	err := r.db.Table("\"Specialists\"").
+		Where("user_id IS NULL AND is_active = ?", true).
+		Find(&specialists).Error
+	return specialists, err
+}
+func (r *gormSpecialistRepo) Activate(id uint) error {
+	return r.db.Table("\"Specialists\"").Where("id = ?", id).Update("is_active", true).Error
+}

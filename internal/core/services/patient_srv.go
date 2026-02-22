@@ -24,3 +24,7 @@ func (s *patientService) List() ([]domain.Patient, error) {
 func (s *patientService) FindByDocument(documentNumber string) (*domain.Patient, error) {
 	return s.repo.FindByDocumentNumber(documentNumber)
 }
+
+func (s *patientService) Update(id uint, patient *domain.Patient) error {
+	return s.repo.Update(id, patient)
+}

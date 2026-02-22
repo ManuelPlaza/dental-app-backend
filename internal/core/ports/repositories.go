@@ -1,12 +1,16 @@
 package ports
 
-import "dental-app/internal/core/domain"
+import (
+	"dental-app/internal/core/domain"
+	"time"
+)
 
 // PatientRepository define qué se puede hacer con la base de datos
 type PatientRepository interface {
 	Save(patient *domain.Patient) error
 	GetAll() ([]domain.Patient, error)
 	FindByDocumentNumber(doc string) (*domain.Patient, error)
+	Update(id uint, patient *domain.Patient) error // <--- NUEVO
 }
 
 // ... (al final del archivo)
@@ -17,6 +21,7 @@ type AppointmentRepository interface {
 	GetAll() ([]domain.Appointment, error)
 	GetPaginated(page, limit int, status string) ([]domain.Appointment, int64, error) // <--- status agregado
 	GetSummary() (map[string]int64, error)
+	HasSpecialistConflict(specialistID uint, start, end time.Time, excludeID uint) (bool, error)
 }
 
 // ... (interfaces anteriores)
@@ -35,9 +40,12 @@ type SpecialistRepository interface {
 	Save(s *domain.Specialist) error
 	GetAll() ([]domain.Specialist, error)
 	Inactivate(id uint) error
+	Activate(id uint) error // <--- NUEVO
 	ExistsByID(id uint) (bool, error)
+	GetWithoutUser() ([]domain.Specialist, error) // <--- NUEVO
 }
 
 type ServiceRepository interface {
 	GetAll() ([]domain.Service, error)
+	GetByID(id uint) (*domain.Service, error) // <--- NUEVO
 }
