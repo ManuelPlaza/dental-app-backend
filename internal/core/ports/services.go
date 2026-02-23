@@ -34,6 +34,7 @@ type PaymentService interface {
 type MedicalHistoryService interface {
 	Create(history *domain.MedicalHistory) error
 	GetHistoryByPatient(patientID uint) ([]domain.MedicalHistory, error)
+	GetAll() ([]domain.MedicalHistory, error)
 }
 
 type SpecialistService interface {

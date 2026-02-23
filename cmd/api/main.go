@@ -52,7 +52,7 @@ func main() {
 
 	// --- MÓDULO 4: HISTORIA CLÍNICA ---
 	historyRepo := repository.NewGormMedicalHistoryRepo(db)
-	historySrv := services.NewMedicalHistoryService(historyRepo)
+	historySrv := services.NewMedicalHistoryService(historyRepo, appointRepo)
 	historyHdl := handler.NewMedicalHistoryHandler(historySrv)
 
 	// --- MÓDULO 5: ESPECIALISTAS ---
@@ -100,6 +100,7 @@ func main() {
 
 		// Rutas Historia Clínica
 		v1.POST("/medical-history", historyHdl.Create)
+		v1.GET("/medical-history", historyHdl.GetAll) // <--- NUEVO
 		v1.GET("/patients/:patientId/medical-history", historyHdl.GetByPatient)
 		v1.GET("/patients/:patientId/medical-history/pdf", historyHdl.DownloadPDF)
 

@@ -3,7 +3,7 @@ package handler
 import (
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
-	"dental-app/internal/core/services"
+	"dental-app/internal/utils"
 	"net/http"
 	"strconv"
 
@@ -81,7 +81,7 @@ func (h *MedicalHistoryHandler) DownloadPDF(c *gin.Context) {
 	// OJO: Aquí llamamos a la función del paquete services directamente, o podrías meterla en la interfaz
 	// Para hacerlo rápido, asumiremos que está en el paquete services.
 	// Asegúrate de importar "dental-app/internal/core/services"
-	pdfBytes, err := services.GenerateHistoryPDF(latestHistory)
+	pdfBytes, err := utils.GenerateHistoryPDF(latestHistory)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generando PDF: " + err.Error()})
 		return
@@ -91,4 +91,14 @@ func (h *MedicalHistoryHandler) DownloadPDF(c *gin.Context) {
 	// Esto le dice al navegador: "Oye, esto es un PDF, ábrelo o descárgalo"
 	c.Header("Content-Disposition", "attachment; filename=historia_clinica.pdf")
 	c.Data(http.StatusOK, "application/pdf", pdfBytes)
+}
+
+// GetAll maneja GET /medical-history
+func (h *MedicalHistoryHandler) GetAll(c *gin.Context) {
+	histories, err := h.service.GetAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, histories)
 }

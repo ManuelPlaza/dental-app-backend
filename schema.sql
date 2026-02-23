@@ -131,6 +131,7 @@ ALTER TABLE "Payments" ADD COLUMN  status VARCHAR(50) DEFAULT 'completed'; -- co
 
 ALTER TABLE "MedicalHistory" ADD CONSTRAINT "medical_patient_fk" FOREIGN KEY ("patient_id") REFERENCES "Patient"("id");
 ALTER TABLE "MedicalHistory" ADD CONSTRAINT "medical_appointment_fk" FOREIGN KEY ("appointment_id") REFERENCES "Appointments"("id");
+ALTER TABLE "MedicalHistory" ADD COLUMN next_appointment_date TIMESTAMP;
 
 ALTER TABLE "LoyaltyTransactions" ADD CONSTRAINT "loyalty_patient_fk" FOREIGN KEY ("patient_id") REFERENCES "Patient"("id");
 ALTER TABLE "LoyaltyTransactions" ADD CONSTRAINT "loyalty_appointment_fk" FOREIGN KEY ("appointment_id") REFERENCES "Appointments"("id");

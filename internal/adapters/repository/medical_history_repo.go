@@ -34,3 +34,15 @@ func (r *gormMedicalHistoryRepo) GetByPatientID(patientID uint) ([]domain.Medica
 
 	return histories, err
 }
+
+// GetAll retorna todos los historiales ordenados del más reciente al más viejo
+func (r *gormMedicalHistoryRepo) GetAll() ([]domain.MedicalHistory, error) {
+	var histories []domain.MedicalHistory
+	err := r.db.Table("\"MedicalHistory\"").
+		Preload("Appointment").
+		Preload("Appointment.Patient").
+		Preload("Appointment.Specialist").
+		Order("created_at DESC").
+		Find(&histories).Error
+	return histories, err
+}
