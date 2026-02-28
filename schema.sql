@@ -120,6 +120,8 @@ ALTER TABLE "Specialists" ALTER COLUMN "user_id" DROP NOT NULL;
 
 ALTER TABLE "Appointments" ADD COLUMN  modification_count INTEGER DEFAULT 0;
 ALTER TABLE "Appointments" ADD COLUMN notes TEXT;
+ALTER TABLE "Appointments" ADD COLUMN cancellation_reason VARCHAR(100);
+ALTER TABLE "Appointments" ADD COLUMN cancellation_notes TEXT;
 ALTER TABLE "Appointments" ADD CONSTRAINT "appointments_patient_fk" FOREIGN KEY ("patient_id") REFERENCES "Patient"("id");
 ALTER TABLE "Appointments" ADD CONSTRAINT "appointments_specialist_fk" FOREIGN KEY ("specialist_id") REFERENCES "Specialists"("id");
 ALTER TABLE "Appointments" ADD CONSTRAINT "appointments_service_fk" FOREIGN KEY ("service_id") REFERENCES "Services"("id");

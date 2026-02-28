@@ -30,6 +30,8 @@ type PaymentRepository interface {
 	Save(payment *domain.Payment) error
 	GetAll() ([]domain.Payment, error) // <--- NUEVO
 	GetByAppointmentID(appID uint) ([]domain.Payment, error)
+	GetByID(id uint) (*domain.Payment, error) // <--- NUEVO
+	Update(payment *domain.Payment) error     // <--- NUEVO
 }
 
 type MedicalHistoryRepository interface {

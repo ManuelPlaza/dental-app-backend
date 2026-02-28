@@ -185,6 +185,25 @@ func (s *appointmentService) AdminUpdate(id uint, req domain.AdminUpdateRequest)
 		return errors.New("cita no encontrada")
 	}
 
+	// Dentro de AdminUpdate, agregar después de validar el status:
+	if req.Status == "cancelled" {
+		if req.CancellationReason == "" {
+			return errors.New("debes seleccionar un motivo de cancelación")
+		}
+		// Validar que el motivo sea válido
+		validReasons := map[string]bool{
+			"no_show": true, "patient_request": true,
+			"auto_expired": true, "emergency": true,
+			"scheduling_conflict": true, "specialist_unavailable": true,
+			"clinic_decision": true, "other": true,
+		}
+		if !validReasons[req.CancellationReason] {
+			return errors.New("motivo de cancelación inválido")
+		}
+		app.CancellationReason = req.CancellationReason
+		app.CancellationNotes = req.CancellationNotes
+	}
+
 	// Regla: Las citas completadas o canceladas no se pueden modificar
 	if app.Status == "completed" || app.Status == "cancelled" {
 		return errors.New("no se puede modificar una cita " + app.Status)

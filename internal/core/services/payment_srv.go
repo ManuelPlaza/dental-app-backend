@@ -22,19 +22,23 @@ func NewPaymentService(payRepo ports.PaymentRepository, appointRepo ports.Appoin
 
 // ... (El método Process queda igual, pégalo aquí abajo) ...
 func (s *paymentService) Process(payment *domain.Payment) error {
-	// ... (Tu código de Process que ya tenías) ...
-	// COPIA Y PEGA TU FUNCIÓN Process AQUÍ
-	// (Por brevedad no la repito, pero no la borres)
-	// Regla 1: Monto positivo...
-	if payment.Amount <= 0 {
+	// Permitir amount=0 solo si es un pago pendiente generado automáticamente
+	if payment.Amount < 0 {
+		return errors.New("el monto del pago no puede ser negativo")
+	}
+	if payment.Amount == 0 && payment.Method != "pending" {
 		return errors.New("el monto del pago debe ser mayor a cero")
 	}
+
+	// Nequi requiere código de referencia
 	if payment.Method == "nequi" && payment.ReferenceCode == "" {
 		return errors.New("para pagos con Nequi, el código de referencia es obligatorio")
 	}
+
 	if payment.PaymentDate.IsZero() {
 		payment.PaymentDate = time.Now()
 	}
+
 	return s.payRepo.Save(payment)
 }
 
@@ -68,4 +72,37 @@ func (s *paymentService) GetBalance(appID uint) (float64, float64, float64, erro
 	remaining := totalCost - totalPaid
 
 	return totalCost, totalPaid, remaining, nil
+}
+func (s *paymentService) UpdatePayment(id uint, payment *domain.Payment) error {
+	// Buscar el registro existente
+	existing, err := s.payRepo.GetByID(id)
+	if err != nil {
+		return errors.New("registro de pago no encontrado")
+	}
+
+	// Validar monto
+	if payment.Amount < 0 {
+		return errors.New("el monto no puede ser negativo")
+	}
+
+	// Nequi requiere código de referencia
+	if payment.Method == "nequi" && payment.ReferenceCode == "" {
+		return errors.New("para pagos con Nequi, el código de referencia es obligatorio")
+	}
+
+	// Actualizar solo los campos que vienen
+	if payment.Amount > 0 {
+		existing.Amount = payment.Amount
+	}
+	if payment.Method != "" {
+		existing.Method = payment.Method
+	}
+	if payment.ReferenceCode != "" {
+		existing.ReferenceCode = payment.ReferenceCode
+	}
+	if payment.Notes != "" {
+		existing.Notes = payment.Notes
+	}
+
+	return s.payRepo.Update(existing)
 }

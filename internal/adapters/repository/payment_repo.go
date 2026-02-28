@@ -33,3 +33,12 @@ func (r *gormPaymentRepo) GetByAppointmentID(appID uint) ([]domain.Payment, erro
 	err := r.db.Table("\"Payments\"").Where("appointment_id = ?", appID).Find(&payments).Error
 	return payments, err
 }
+func (r *gormPaymentRepo) GetByID(id uint) (*domain.Payment, error) {
+	var payment domain.Payment
+	err := r.db.Table("\"Payments\"").First(&payment, id).Error
+	return &payment, err
+}
+
+func (r *gormPaymentRepo) Update(payment *domain.Payment) error {
+	return r.db.Table("\"Payments\"").Save(payment).Error
+}

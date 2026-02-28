@@ -69,3 +69,26 @@ func getItemStatus(pending float64) string {
 	}
 	return "PARTIAL" // Debe dinero
 }
+
+// Update maneja PUT /payments/:id
+func (h *PaymentHandler) Update(c *gin.Context) {
+	idStr := c.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de pago inválido"})
+		return
+	}
+
+	var payment domain.Payment
+	if err := c.ShouldBindJSON(&payment); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido: " + err.Error()})
+		return
+	}
+
+	if err := h.service.UpdatePayment(uint(id64), &payment); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Pago actualizado correctamente"})
+}

@@ -205,3 +205,9 @@ func (h *AppointmentHandler) AdminUpdate(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Cita actualizada correctamente"})
 }
+
+// GetCancellationReasons maneja GET /appointments/cancellation-reasons
+func (h *AppointmentHandler) GetCancellationReasons(c *gin.Context) {
+	reasons := domain.GetCancellationReasons()
+	c.JSON(http.StatusOK, reasons)
+}

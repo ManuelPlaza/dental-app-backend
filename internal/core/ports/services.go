@@ -30,6 +30,7 @@ type PaymentService interface {
 	Process(payment *domain.Payment) error
 	List() ([]domain.Payment, error) // <--- NUEVO
 	GetBalance(appID uint) (float64, float64, float64, error)
+	UpdatePayment(id uint, payment *domain.Payment) error // <--- NUEVO
 }
 type MedicalHistoryService interface {
 	Create(history *domain.MedicalHistory) error
