@@ -58,3 +58,7 @@ type ServiceRepository interface {
 	GetAll() ([]domain.Service, error)
 	GetByID(id uint) (*domain.Service, error) // <--- NUEVO
 }
+type UserRepository interface {
+	FindByEmail(email string) (*domain.User, error)
+	FindByID(id uint) (*domain.User, error)
+}

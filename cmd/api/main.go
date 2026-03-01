@@ -5,10 +5,11 @@ import (
 	"os"
 
 	"dental-app/internal/adapters/handler"
+	"dental-app/internal/adapters/middleware"
 	"dental-app/internal/adapters/repository"
 	"dental-app/internal/core/services"
 
-	"github.com/gin-contrib/cors" // <--- Importado
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -29,6 +30,11 @@ func main() {
 	}
 
 	// 3. INYECCIÓN DE DEPENDENCIAS (Wiring)
+
+	// --- MÓDULO AUTH ---
+	userRepo := repository.NewGormUserRepo(db)
+	authSrv := services.NewAuthService(userRepo)
+	authHdl := handler.NewAuthHandler(authSrv)
 
 	// --- MÓDULO 1: PACIENTES ---
 	patientRepo := repository.NewGormPatientRepo(db)
@@ -67,61 +73,68 @@ func main() {
 	// 4. Configurar Router (Gin)
 	r := gin.Default()
 
-	// --- CONFIGURACIÓN CORS (ESTO ES LO QUE FALTABA USAR) ---
-	// Permite que Flutter (puerto 3000 o celular) hable con Go (puerto 8080)
+	// --- CONFIGURACIÓN CORS ---
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
-	r.Use(cors.New(config)) // <--- Aquí se usa la librería importada
-	// --------------------------------------------------------
+	r.Use(cors.New(config))
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong - El servidor dental está vivo 🦷"})
 	})
 
+	// --- RUTAS PÚBLICAS (sin autenticación) ---
+	r.POST("/api/v1/auth/login", authHdl.Login)
+	r.POST("/api/v1/auth/refresh", authHdl.Refresh)
+
+	// --- RUTAS PROTEGIDAS (con JWT) ---
 	v1 := r.Group("/api/v1")
+	v1.Use(middleware.AuthMiddleware(authSrv))
 	{
-		//DASHBOARD
+		// Auth
+		v1.POST("/auth/logout", authHdl.Logout)
+		v1.GET("/auth/me", authHdl.Me)
+
+		// Dashboard
 		v1.GET("/dashboard", dashboardHdl.GetStats)
 
 		// Rutas Pacientes
 		v1.POST("/patients", patientHdl.Create)
 		v1.GET("/patients", patientHdl.GetAll)
 		v1.GET("/patients/document/:document_number", patientHdl.FindByDocument)
-		v1.PUT("/patients/:id", patientHdl.Update) // <--- NUEVA
+		v1.PUT("/patients/:id", patientHdl.Update)
 
 		// Rutas Citas
 		v1.POST("/appointments", appointHdl.Create)
 		v1.GET("/appointments", appointHdl.GetAll)
 		v1.GET("/appointments/paginated", appointHdl.GetPaginated)
-		v1.GET("/appointments/summary", appointHdl.GetSummary) // <--- NUEVO
+		v1.GET("/appointments/summary", appointHdl.GetSummary)
 		v1.GET("/appointments/cancellation-reasons", appointHdl.GetCancellationReasons)
 		v1.PUT("/appointments/:id", appointHdl.Modify)
 		v1.PATCH("/appointments/:id/cancel", appointHdl.Cancel)
-		v1.PUT("/admin/appointments/:id", appointHdl.AdminUpdate) // <--- Reemplaza AdminUpdateStatus
+		v1.PUT("/admin/appointments/:id", appointHdl.AdminUpdate)
 
 		// Rutas Pagos
 		v1.POST("/payments", payHdl.Create)
 		v1.GET("/payments", payHdl.GetAll)
-		v1.PUT("/payments/:id", payHdl.Update) // <--- NUEVA
+		v1.PUT("/payments/:id", payHdl.Update)
 		v1.GET("/appointments/:id/balance", payHdl.GetBalance)
 
 		// Rutas Historia Clínica
 		v1.POST("/medical-history", historyHdl.Create)
-		v1.GET("/medical-history", historyHdl.GetAll) // <--- NUEVO
+		v1.GET("/medical-history", historyHdl.GetAll)
 		v1.GET("/patients/:patientId/medical-history", historyHdl.GetByPatient)
 		v1.GET("/patients/:patientId/medical-history/pdf", historyHdl.DownloadPDF)
 
 		// Rutas Especialistas
 		v1.POST("/specialists", specialistHdl.Create)
-		v1.GET("/specialists/without-user", specialistHdl.GetWithoutUser) // <--- NUEVO
+		v1.GET("/specialists/without-user", specialistHdl.GetWithoutUser)
 		v1.GET("/specialists", specialistHdl.GetAll)
 		v1.PATCH("/specialists/:id/inactivate", specialistHdl.Inactivate)
 		v1.PATCH("/specialists/:id/activate", specialistHdl.Activate)
 
 		// Rutas Servicios
 		v1.GET("/services", serviceHdl.GetAll)
-
 	}
 
 	// 5. Correr Servidor

@@ -53,3 +53,9 @@ type ServiceService interface {
 type DashboardService interface {
 	GetStats() (map[string]interface{}, error)
 }
+
+type AuthService interface {
+	Login(email, password string) (*domain.AuthResponse, error)
+	RefreshToken(refreshToken string) (*domain.AuthResponse, error)
+	ValidateToken(token string) (uint, error)
+}
