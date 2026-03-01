@@ -49,3 +49,7 @@ type SpecialistService interface {
 type ServiceService interface {
 	List() ([]domain.Service, error)
 }
+
+type DashboardService interface {
+	GetStats() (map[string]interface{}, error)
+}

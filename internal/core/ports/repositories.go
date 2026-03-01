@@ -22,6 +22,9 @@ type AppointmentRepository interface {
 	GetPaginated(page, limit int, status string) ([]domain.Appointment, int64, error) // <--- status agregado
 	GetSummary() (map[string]int64, error)
 	HasSpecialistConflict(specialistID uint, start, end time.Time, excludeID uint) (bool, error)
+	GetToday() ([]domain.Appointment, error)                    // <--- NUEVO
+	GetMonthlyCancellations() ([]map[string]interface{}, error) // <--- NUEVO
+	GetTopPatients(limit int) ([]map[string]interface{}, error) // <--- NUEVO
 }
 
 // ... (interfaces anteriores)
@@ -30,8 +33,10 @@ type PaymentRepository interface {
 	Save(payment *domain.Payment) error
 	GetAll() ([]domain.Payment, error) // <--- NUEVO
 	GetByAppointmentID(appID uint) ([]domain.Payment, error)
-	GetByID(id uint) (*domain.Payment, error) // <--- NUEVO
-	Update(payment *domain.Payment) error     // <--- NUEVO
+	GetByID(id uint) (*domain.Payment, error)            // <--- NUEVO
+	Update(payment *domain.Payment) error                // <--- NUEVO
+	GetMonthlyIncome() ([]map[string]interface{}, error) // <--- NUEVO
+	GetRecent(limit int) ([]domain.Payment, error)
 }
 
 type MedicalHistoryRepository interface {

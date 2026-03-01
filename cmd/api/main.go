@@ -60,6 +60,10 @@ func main() {
 	specialistSrv := services.NewSpecialistService(specialistRepo)
 	specialistHdl := handler.NewSpecialistHandler(specialistSrv)
 
+	// --- MÓDULO DASHBOARD ---
+	dashboardSrv := services.NewDashboardService(appointRepo, payRepo, patientRepo)
+	dashboardHdl := handler.NewDashboardHandler(dashboardSrv)
+
 	// 4. Configurar Router (Gin)
 	r := gin.Default()
 
@@ -77,6 +81,9 @@ func main() {
 
 	v1 := r.Group("/api/v1")
 	{
+		//DASHBOARD
+		v1.GET("/dashboard", dashboardHdl.GetStats)
+
 		// Rutas Pacientes
 		v1.POST("/patients", patientHdl.Create)
 		v1.GET("/patients", patientHdl.GetAll)
