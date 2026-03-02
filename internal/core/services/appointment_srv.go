@@ -7,10 +7,12 @@ import (
 	"time"
 )
 
-// 1. DEFINICIÓN DE LA ESTRUCTURA (Esto es lo que te faltaba)
+var bogotaLoc, _ = time.LoadLocation("America/Bogota")
+
+// 1. DEFINICIÓN DE LA ESTRUCTURA
 type appointmentService struct {
 	repo        ports.AppointmentRepository
-	patientRepo ports.PatientRepository // <--- debe estar esta línea
+	patientRepo ports.PatientRepository
 	serviceRepo ports.ServiceRepository
 }
 
@@ -19,23 +21,56 @@ func NewAppointmentService(repo ports.AppointmentRepository, patientRepo ports.P
 	return &appointmentService{repo: repo, patientRepo: patientRepo, serviceRepo: serviceRepo}
 }
 
+// Helper: validar horarios de atención en hora de Bogotá
+func validBusinessHours(t time.Time) error {
+	// Convertir a hora de Bogotá para validar
+	local := t.In(bogotaLoc)
+	weekday := local.Weekday()
+	timeInMinutes := local.Hour()*60 + local.Minute()
+
+	// Domingo → cerrado
+	if weekday == time.Sunday {
+		return errors.New("no atendemos los domingos")
+	}
+
+	// Sábado → 8am a 12pm
+	if weekday == time.Saturday {
+		if timeInMinutes < 8*60 || timeInMinutes >= 12*60 {
+			return errors.New("Los sábados atendemos de 8:00 a.m. a 12:00 p.m.")
+		}
+		return nil
+	}
+
+	// Lunes a Viernes → 8am a 6pm
+	if timeInMinutes < 8*60 || timeInMinutes >= 18*60 {
+		return errors.New("El horario de atención es de 8:00 a.m. a 6:00 p.m.")
+	}
+
+	return nil
+}
+
 // 3. MÉTODO AGENDAR (Schedule) — con validación de horarios
 func (s *appointmentService) Schedule(app *domain.Appointment) error {
+	// Convertir tiempos a Bogotá
+	startBogota := app.StartTime.Time.In(bogotaLoc)
+	endBogota := app.EndTime.Time.In(bogotaLoc)
+
 	// Regla: Hora fin debe ser después de hora inicio
-	if app.EndTime.Before(app.StartTime) {
+	if endBogota.Before(startBogota) {
 		return errors.New("la hora de fin no puede ser antes de la hora de inicio")
 	}
 
 	// Regla: Validar horarios de atención
-	if err := validBusinessHours(app.StartTime); err != nil {
+	if err := validBusinessHours(startBogota); err != nil {
 		return err
 	}
-	if err := validBusinessHours(app.EndTime); err != nil {
+	if err := validBusinessHours(endBogota); err != nil {
 		return err
 	}
 
 	// Regla: No se puede agendar en el pasado
-	if app.StartTime.Before(time.Now()) {
+	nowBogota := time.Now().In(bogotaLoc)
+	if startBogota.Before(nowBogota) {
 		return errors.New("no puedes agendar una cita en una fecha y hora pasada")
 	}
 
@@ -58,7 +93,7 @@ func (s *appointmentService) Schedule(app *domain.Appointment) error {
 
 	// Regla: Verificar conflicto de especialista
 	if app.SpecialistID != 0 {
-		conflict, err := s.repo.HasSpecialistConflict(app.SpecialistID, app.StartTime, app.EndTime, 0)
+		conflict, err := s.repo.HasSpecialistConflict(app.SpecialistID, app.StartTime.Time, app.EndTime.Time, 0)
 		if err != nil {
 			return errors.New("error verificando disponibilidad del especialista")
 		}
@@ -83,9 +118,8 @@ func (s *appointmentService) Schedule(app *domain.Appointment) error {
 	return s.repo.Save(app)
 }
 
-// 4. MÉTODO MODIFICAR (Modify) - Nueva lógica
+// 4. MÉTODO MODIFICAR (Modify)
 func (s *appointmentService) Modify(id uint, newStart, newEnd time.Time) error {
-	// Buscar la cita original
 	app, err := s.repo.GetByID(id)
 	if err != nil {
 		return errors.New("cita no encontrada")
@@ -96,43 +130,43 @@ func (s *appointmentService) Modify(id uint, newStart, newEnd time.Time) error {
 		return errors.New("esta cita ya fue modificada una vez y no se permiten más cambios")
 	}
 
-	// REGLA: Mínimo 1 hora de antelación
-	deadline := time.Now().Add(1 * time.Hour)
-	if deadline.After(app.StartTime) {
+	// REGLA: Mínimo 1 hora de antelación en hora de Bogotá
+	deadline := time.Now().In(bogotaLoc).Add(1 * time.Hour)
+	if deadline.After(app.StartTime.Time.In(bogotaLoc)) {
 		return errors.New("ya es muy tarde para modificar la cita (mínimo 1 hora antes)")
 	}
 
-	// Aplicar cambios
-	app.StartTime = newStart
-	app.EndTime = newEnd
+	// Aplicar cambios en hora de Bogotá
+	app.StartTime = domain.BogotaTime{Time: newStart.In(bogotaLoc)}
+	app.EndTime = domain.BogotaTime{Time: newEnd.In(bogotaLoc)}
 	app.ModificationCount++
 
 	return s.repo.Update(app)
 }
 
-// 5. MÉTODO CANCELAR (Cancel) - Nueva lógica
+// 5. MÉTODO CANCELAR (Cancel)
 func (s *appointmentService) Cancel(id uint) error {
 	app, err := s.repo.GetByID(id)
 	if err != nil {
 		return errors.New("cita no encontrada")
 	}
 
-	// REGLA: Mínimo 2 horas de antelación para cancelar
-	deadline := time.Now().Add(2 * time.Hour)
-	if deadline.After(app.StartTime) {
+	// REGLA: Mínimo 2 horas de antelación en hora de Bogotá
+	deadline := time.Now().In(bogotaLoc).Add(2 * time.Hour)
+	if deadline.After(app.StartTime.Time.In(bogotaLoc)) {
 		return errors.New("no se puede cancelar con menos de 2 horas de antelación")
 	}
 
 	app.Status = "cancelled"
 	return s.repo.Update(app)
 }
+
 func (s *appointmentService) List() ([]domain.Appointment, error) {
 	return s.repo.GetAll()
 }
 
 // 6. MÉTODO ADMIN: Cambiar estado sin restricciones
 func (s *appointmentService) AdminUpdateStatus(id uint, status string) error {
-	// Validar que el status sea un valor permitido
 	validStatuses := map[string]bool{
 		"pending":   true,
 		"scheduled": true,
@@ -148,7 +182,6 @@ func (s *appointmentService) AdminUpdateStatus(id uint, status string) error {
 		return errors.New("cita no encontrada")
 	}
 
-	// Sin validación de modification_count ni tiempo
 	app.Status = status
 	return s.repo.Update(app)
 }
@@ -185,12 +218,16 @@ func (s *appointmentService) AdminUpdate(id uint, req domain.AdminUpdateRequest)
 		return errors.New("cita no encontrada")
 	}
 
-	// Dentro de AdminUpdate, agregar después de validar el status:
+	// Regla: Las citas completadas o canceladas no se pueden modificar
+	if app.Status == "completed" || app.Status == "cancelled" {
+		return errors.New("no se puede modificar una cita " + app.Status)
+	}
+
+	// Validar motivo si se va a cancelar
 	if req.Status == "cancelled" {
 		if req.CancellationReason == "" {
 			return errors.New("debes seleccionar un motivo de cancelación")
 		}
-		// Validar que el motivo sea válido
 		validReasons := map[string]bool{
 			"no_show": true, "patient_request": true,
 			"auto_expired": true, "emergency": true,
@@ -204,24 +241,19 @@ func (s *appointmentService) AdminUpdate(id uint, req domain.AdminUpdateRequest)
 		app.CancellationNotes = req.CancellationNotes
 	}
 
-	// Regla: Las citas completadas o canceladas no se pueden modificar
-	if app.Status == "completed" || app.Status == "cancelled" {
-		return errors.New("no se puede modificar una cita " + app.Status)
-	}
-
-	// Regla: La nueva fecha no puede ser en el pasado
-	if req.StartTime != nil && req.StartTime.Before(time.Now()) {
+	// Regla: La nueva fecha no puede ser en el pasado (en hora Bogotá)
+	if req.StartTime != nil && req.StartTime.Time.In(bogotaLoc).Before(time.Now().In(bogotaLoc)) {
 		return errors.New("no puedes reprogramar una cita a una fecha y hora pasada")
 	}
 
-	// Determinar el start_time a usar para validaciones
-	startTime := app.StartTime
-	endTime := app.EndTime
+	// Determinar tiempos para validación de conflicto
+	startTime := app.StartTime.Time
+	endTime := app.EndTime.Time
 	if req.StartTime != nil {
-		startTime = *req.StartTime
+		startTime = req.StartTime.Time.In(bogotaLoc)
 	}
 	if req.EndTime != nil {
-		endTime = *req.EndTime
+		endTime = req.EndTime.Time.In(bogotaLoc)
 	}
 
 	// Regla: Verificar conflicto de especialista si cambia especialista o fechas
@@ -251,39 +283,11 @@ func (s *appointmentService) AdminUpdate(id uint, req domain.AdminUpdateRequest)
 		app.ServiceID = *req.ServiceID
 	}
 	if req.StartTime != nil {
-		app.StartTime = *req.StartTime
+		app.StartTime = domain.BogotaTime{Time: req.StartTime.Time.In(bogotaLoc)}
 	}
 	if req.EndTime != nil {
-		app.EndTime = *req.EndTime
+		app.EndTime = domain.BogotaTime{Time: req.EndTime.Time.In(bogotaLoc)}
 	}
 
 	return s.repo.Update(app)
-}
-
-// Helper: validar horarios de atención
-func validBusinessHours(t time.Time) error {
-	weekday := t.Weekday()
-	hour := t.Hour()
-	minute := t.Minute()
-	timeInMinutes := hour*60 + minute
-
-	// Domingo → cerrado
-	if weekday == time.Sunday {
-		return errors.New("no atendemos los domingos")
-	}
-
-	// Sábado → 8am a 12pm
-	if weekday == time.Saturday {
-		if timeInMinutes < 8*60 || timeInMinutes >= 12*60 {
-			return errors.New("los sábados atendemos de 8:00 a.m. a 12:00 p.m.")
-		}
-		return nil
-	}
-
-	// Lunes a Viernes → 8am a 6pm
-	if timeInMinutes < 8*60 || timeInMinutes >= 18*60 {
-		return errors.New("el horario de atención es de 8:00 a.m. a 6:00 p.m.")
-	}
-
-	return nil
 }

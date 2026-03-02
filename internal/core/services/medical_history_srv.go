@@ -52,8 +52,8 @@ func (s *medicalHistoryService) Create(history *domain.MedicalHistory) error {
 			PatientID:    app.PatientID,
 			SpecialistID: app.SpecialistID,
 			ServiceID:    app.ServiceID,
-			StartTime:    *history.NextAppointmentDate,
-			EndTime:      history.NextAppointmentDate.Add(time.Duration(60) * time.Minute),
+			StartTime:    domain.BogotaTime{Time: history.NextAppointmentDate.In(bogotaLoc)},
+			EndTime:      domain.BogotaTime{Time: history.NextAppointmentDate.Add(time.Duration(60) * time.Minute).In(bogotaLoc)},
 			Status:       "pending",
 			Notes:        "Cita generada automáticamente desde historia clínica",
 		}

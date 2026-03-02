@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"dental-app/internal/adapters/handler"
 	"dental-app/internal/adapters/middleware"
@@ -17,6 +18,13 @@ import (
 )
 
 func main() {
+
+	// 0. Cargar timezone de Colombia ANTES de todo
+	loc, err := time.LoadLocation("America/Bogota")
+	if err != nil {
+		log.Fatal("❌ Error cargando timezone:", err)
+	}
+	time.Local = loc // Establecer como timezone local del proceso
 	// 1. Cargar variables de entorno
 	godotenv.Load()
 
