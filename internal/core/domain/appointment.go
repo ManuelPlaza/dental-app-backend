@@ -1,17 +1,20 @@
 package domain
 
 import (
+	"database/sql/driver"
+	"fmt"
 	"strings"
 	"time"
 )
+
+var bogotaLoc, _ = time.LoadLocation("America/Bogota")
 
 // BogotaTime es un tipo personalizado que siempre convierte a hora de Bogotá
 type BogotaTime struct {
 	time.Time
 }
 
-var bogotaLoc, _ = time.LoadLocation("America/Bogota")
-
+// UnmarshalJSON — convierte JSON a BogotaTime
 func (bt *BogotaTime) UnmarshalJSON(data []byte) error {
 	s := strings.Trim(string(data), `"`)
 	if s == "null" || s == "" {
@@ -35,9 +38,54 @@ func (bt *BogotaTime) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON — convierte BogotaTime a JSON sin Z (hora local)
 func (bt BogotaTime) MarshalJSON() ([]byte, error) {
 	t := bt.Time.In(bogotaLoc)
-	return []byte(`"` + t.Format("2006-01-02T15:04:05") + `"`), nil
+	return []byte(`"` + t.Format("2006-01-02T15:04:05-05:00") + `"`), nil
+}
+
+// Scan — permite a GORM leer BogotaTime desde la BD ← ESTO FALTABA
+func (bt *BogotaTime) Scan(value interface{}) error {
+	if value == nil {
+		bt.Time = time.Time{}
+		return nil
+	}
+
+	switch v := value.(type) {
+	case time.Time:
+		// El DB devuelve TIMESTAMP sin zona horaria como UTC
+		// pero el valor YA ES hora de Bogotá, solo hay que reinterpretarlo
+		bt.Time = time.Date(
+			v.Year(), v.Month(), v.Day(),
+			v.Hour(), v.Minute(), v.Second(), v.Nanosecond(),
+			bogotaLoc, // ← Reinterpretar como Bogotá, no convertir
+		)
+		return nil
+	case []byte:
+		t, err := time.ParseInLocation("2006-01-02 15:04:05", string(v), bogotaLoc)
+		if err != nil {
+			return err
+		}
+		bt.Time = t
+		return nil
+	case string:
+		t, err := time.ParseInLocation("2006-01-02 15:04:05", v, bogotaLoc)
+		if err != nil {
+			return err
+		}
+		bt.Time = t
+		return nil
+	}
+
+	return fmt.Errorf("no se puede convertir %T a BogotaTime", value)
+}
+
+// Value — permite a GORM escribir BogotaTime en la BD ← ESTO FALTABA
+func (bt BogotaTime) Value() (driver.Value, error) {
+	if bt.Time.IsZero() {
+		return nil, nil
+	}
+	return bt.Time.In(bogotaLoc), nil
 }
 
 type Appointment struct {
@@ -59,17 +107,16 @@ type Appointment struct {
 	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
-// AdminUpdateRequest estructura para actualización admin sin restricciones
+func (Appointment) TableName() string {
+	return "\"Appointments\""
+}
+
 type AdminUpdateRequest struct {
 	Status             string      `json:"status"`
 	SpecialistID       *uint       `json:"specialist_id"`
 	ServiceID          *uint       `json:"service_id"`
-	StartTime          *BogotaTime `json:"start_time"` // ← *BogotaTime no *time.Time
-	EndTime            *BogotaTime `json:"end_time"`   // ← *BogotaTime no *time.Time
+	StartTime          *BogotaTime `json:"start_time"`
+	EndTime            *BogotaTime `json:"end_time"`
 	CancellationReason string      `json:"cancellation_reason"`
 	CancellationNotes  string      `json:"cancellation_notes"`
-}
-
-func (Appointment) TableName() string {
-	return "\"Appointments\""
 }
