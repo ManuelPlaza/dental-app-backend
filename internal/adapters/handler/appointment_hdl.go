@@ -211,3 +211,21 @@ func (h *AppointmentHandler) GetCancellationReasons(c *gin.Context) {
 	reasons := domain.GetCancellationReasons()
 	c.JSON(http.StatusOK, reasons)
 }
+
+// GetByAppointment maneja GET /appointments/:id/payments
+func (h *PaymentHandler) GetByAppointment(c *gin.Context) {
+	idStr := c.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	payments, err := h.service.GetByAppointment(uint(id64))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, payments)
+}

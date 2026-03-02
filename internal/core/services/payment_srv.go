@@ -106,3 +106,6 @@ func (s *paymentService) UpdatePayment(id uint, payment *domain.Payment) error {
 
 	return s.payRepo.Update(existing)
 }
+func (s *paymentService) GetByAppointment(appID uint) ([]domain.Payment, error) {
+	return s.payRepo.GetByAppointmentID(appID)
+}

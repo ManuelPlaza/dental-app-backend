@@ -127,6 +127,7 @@ func main() {
 		v1.GET("/payments", payHdl.GetAll)
 		v1.PUT("/payments/:id", payHdl.Update)
 		v1.GET("/appointments/:id/balance", payHdl.GetBalance)
+		v1.GET("/appointments/:id/payments", payHdl.GetByAppointment)
 
 		// Rutas Historia Clínica
 		v1.POST("/medical-history", historyHdl.Create)
