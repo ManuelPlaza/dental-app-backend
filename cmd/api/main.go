@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -28,13 +29,25 @@ func main() {
 	// 1. Cargar variables de entorno
 	godotenv.Load()
 
-	// 2. Conexión a Base de Datos
-	dsn := "host=127.0.0.1 user=postgres password=postgres dbname=dental_db port=5432 sslmode=disable"
+	// 2. Conexión a DB totalmente dinámica
+	var dsn string
+	if dbURL := os.Getenv("DATABASE_URL"); dbURL != "" {
+		// Caso Railway o Docker Compose con URL completa
+		dsn = dbURL
+	} else {
+		// Caso Local manual usando variables individuales
+		dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+			os.Getenv("DB_HOST"),
+			os.Getenv("DB_USER"),
+			os.Getenv("DB_PASSWORD"),
+			os.Getenv("DB_NAME"),
+			os.Getenv("DB_PORT"),
+		)
+	}
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("❌ Falló conexión a la Base de Datos:", err)
-	} else {
-		log.Println("✅ Conectado a la Base de Datos")
+		log.Fatalf("❌ Error de conexión: %v", err)
 	}
 
 	// 3. INYECCIÓN DE DEPENDENCIAS (Wiring)
@@ -149,9 +162,9 @@ func main() {
 	// 5. Correr Servidor
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		log.Fatal("❌ La variable de entorno PORT no está definida")
 	}
 
-	log.Println("🚀 Servidor corriendo en puerto " + port)
+	log.Printf("🚀 Servidor en el puerto %s", port)
 	r.Run(":" + port)
 }

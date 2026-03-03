@@ -1,0 +1,6 @@
+.env
+.git
+.idx
+bin
+obj
+vendor
