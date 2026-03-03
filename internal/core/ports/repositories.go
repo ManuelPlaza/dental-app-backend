@@ -56,7 +56,11 @@ type SpecialistRepository interface {
 
 type ServiceRepository interface {
 	GetAll() ([]domain.Service, error)
-	GetByID(id uint) (*domain.Service, error) // <--- NUEVO
+	GetAllIncludingInactive() ([]domain.Service, error) // <--- NUEVO (para el admin)
+	GetByID(id uint) (*domain.Service, error)
+	Save(service *domain.Service) error        // <--- NUEVO
+	Update(service *domain.Service) error      // <--- NUEVO
+	ToggleActive(id uint, isActive bool) error // <--- NUEVO
 }
 type UserRepository interface {
 	FindByEmail(email string) (*domain.User, error)

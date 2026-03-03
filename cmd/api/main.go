@@ -155,8 +155,12 @@ func main() {
 		v1.PATCH("/specialists/:id/inactivate", specialistHdl.Inactivate)
 		v1.PATCH("/specialists/:id/activate", specialistHdl.Activate)
 
-		// Rutas Servicios
-		v1.GET("/services", serviceHdl.GetAll)
+		v1.GET("/services", serviceHdl.GetAll)                      // Pública (landing)
+		v1.GET("/admin/services", serviceHdl.GetAllAdmin)           // Admin (todos)
+		v1.POST("/services", serviceHdl.Create)                     // <--- NUEVO
+		v1.PUT("/services/:id", serviceHdl.Update)                  // <--- NUEVO
+		v1.PATCH("/services/:id/activate", serviceHdl.Activate)     // <--- NUEVO
+		v1.PATCH("/services/:id/inactivate", serviceHdl.Inactivate) // <--- NUEVO
 	}
 
 	// 5. Correr Servidor

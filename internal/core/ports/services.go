@@ -47,10 +47,6 @@ type SpecialistService interface {
 	GetWithoutUser() ([]domain.Specialist, error) // <--- NUEVO
 }
 
-type ServiceService interface {
-	List() ([]domain.Service, error)
-}
-
 type DashboardService interface {
 	GetStats() (map[string]interface{}, error)
 }
@@ -59,4 +55,12 @@ type AuthService interface {
 	Login(email, password string) (*domain.AuthResponse, error)
 	RefreshToken(refreshToken string) (*domain.AuthResponse, error)
 	ValidateToken(token string) (uint, error)
+}
+type ServiceService interface {
+	List() ([]domain.Service, error)
+	ListAll() ([]domain.Service, error)            // <--- NUEVO (admin ve todos)
+	Create(service *domain.Service) error          // <--- NUEVO
+	Update(id uint, service *domain.Service) error // <--- NUEVO
+	Activate(id uint) error                        // <--- NUEVO
+	Inactivate(id uint) error                      // <--- NUEVO
 }
