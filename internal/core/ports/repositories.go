@@ -66,3 +66,6 @@ type UserRepository interface {
 	FindByEmail(email string) (*domain.User, error)
 	FindByID(id uint) (*domain.User, error)
 }
+type ServiceCategoryRepository interface {
+	GetAll() ([]domain.ServiceCategory, error)
+}

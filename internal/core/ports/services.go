@@ -64,3 +64,7 @@ type ServiceService interface {
 	Activate(id uint) error                        // <--- NUEVO
 	Inactivate(id uint) error                      // <--- NUEVO
 }
+
+type ServiceCategoryService interface {
+	List() ([]domain.ServiceCategory, error)
+}

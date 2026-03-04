@@ -67,6 +67,11 @@ func main() {
 	serviceSrv := services.NewServiceService(serviceRepo)
 	serviceHdl := handler.NewServiceHandler(serviceSrv)
 
+	// --- MÓDULO CATEGORÍAS DE SERVICIOS ---
+	serviceCategoryRepo := repository.NewGormServiceCategoryRepo(db)
+	serviceCategorySrv := services.NewServiceCategoryService(serviceCategoryRepo)
+	serviceCategoryHdl := handler.NewServiceCategoryHandler(serviceCategorySrv)
+
 	// --- MÓDULO 2: CITAS (Agenda) ---
 	appointRepo := repository.NewGormAppointmentRepo(db)
 	appointSrv := services.NewAppointmentService(appointRepo, patientRepo, serviceRepo)
@@ -107,6 +112,7 @@ func main() {
 	// --- RUTAS PÚBLICAS (sin autenticación) ---
 	r.POST("/api/v1/auth/login", authHdl.Login)
 	r.POST("/api/v1/auth/refresh", authHdl.Refresh)
+	r.GET("/api/v1/service-categories", serviceCategoryHdl.GetAll)
 
 	// --- RUTAS PROTEGIDAS (con JWT) ---
 	v1 := r.Group("/api/v1")
