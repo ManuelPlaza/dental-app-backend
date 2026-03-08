@@ -22,7 +22,7 @@ func NewMedicalHistoryHandler(service ports.MedicalHistoryService) *MedicalHisto
 func (h *MedicalHistoryHandler) Create(c *gin.Context) {
 	var history domain.MedicalHistory
 	if err := c.ShouldBindJSON(&history); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido"})
 		return
 	}
 
@@ -46,7 +46,7 @@ func (h *MedicalHistoryHandler) GetByPatient(c *gin.Context) {
 
 	histories, err := h.service.GetHistoryByPatient(patientID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error interno del servidor"})
 		return
 	}
 
@@ -59,13 +59,17 @@ func (h *MedicalHistoryHandler) GetByPatient(c *gin.Context) {
 func (h *MedicalHistoryHandler) DownloadPDF(c *gin.Context) {
 	// 1. Obtener ID del paciente desde la URL
 	patientIDStr := c.Param("patientId")
-	id64, _ := strconv.ParseUint(patientIDStr, 10, 32)
+	id64, err := strconv.ParseUint(patientIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de paciente inválido"})
+		return
+	}
 	patientID := uint(id64)
 
-	// 2. Buscar la historia en Base de Datos (Usamos el servicio que ya tienes)
+	// 2. Buscar la historia en Base de Datos
 	histories, err := h.service.GetHistoryByPatient(patientID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error buscando datos: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error interno del servidor"})
 		return
 	}
 
@@ -83,7 +87,7 @@ func (h *MedicalHistoryHandler) DownloadPDF(c *gin.Context) {
 	// Asegúrate de importar "dental-app/internal/core/services"
 	pdfBytes, err := utils.GenerateHistoryPDF(latestHistory)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generando PDF: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error generando PDF"})
 		return
 	}
 
@@ -97,7 +101,7 @@ func (h *MedicalHistoryHandler) DownloadPDF(c *gin.Context) {
 func (h *MedicalHistoryHandler) GetAll(c *gin.Context) {
 	histories, err := h.service.GetAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error interno del servidor"})
 		return
 	}
 	c.JSON(http.StatusOK, histories)

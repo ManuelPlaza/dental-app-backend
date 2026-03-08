@@ -21,7 +21,7 @@ func (h *PaymentHandler) Create(c *gin.Context) {
 	var payment domain.Payment
 
 	if err := c.ShouldBindJSON(&payment); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido"})
 		return
 	}
 
@@ -35,17 +35,18 @@ func (h *PaymentHandler) Create(c *gin.Context) {
 func (h *PaymentHandler) GetAll(c *gin.Context) {
 	payments, err := h.service.List()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error interno del servidor"})
 		return
 	}
 	c.JSON(http.StatusOK, payments)
 }
 func (h *PaymentHandler) GetBalance(c *gin.Context) {
-	idStr := c.Param("id") // ID de la CITA
-	// (Recuerda importar "strconv" arriba si no está)
-	// Aquí hacemos una conversión rápida (puedes mejorarla luego)
-	// Asegúrate de tener: import "strconv"
-	idUint64, _ := strconv.ParseUint(idStr, 10, 32)
+	idStr := c.Param("id")
+	idUint64, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de cita inválido"})
+		return
+	}
 	appID := uint(idUint64)
 
 	total, paid, pending, err := h.service.GetBalance(appID)
@@ -81,7 +82,7 @@ func (h *PaymentHandler) Update(c *gin.Context) {
 
 	var payment domain.Payment
 	if err := c.ShouldBindJSON(&payment); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido"})
 		return
 	}
 

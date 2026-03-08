@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"dental-app/internal/adapters/handler"
@@ -97,12 +98,23 @@ func main() {
 	dashboardHdl := handler.NewDashboardHandler(dashboardSrv)
 
 	// 4. Configurar Router (Gin)
+	// V6: Usar modo release en producción para no exponer debug info
+	if os.Getenv("GIN_MODE") == "release" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	r := gin.Default()
 
-	// --- CONFIGURACIÓN CORS ---
+	// --- CONFIGURACIÓN CORS (V2: Restringir orígenes permitidos) ---
 	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
+	allowedOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if allowedOrigins != "" {
+		config.AllowOrigins = strings.Split(allowedOrigins, ",")
+	} else {
+		// Solo localhost en desarrollo
+		config.AllowOrigins = []string{"http://localhost:3000", "http://localhost:5173"}
+	}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	r.Use(cors.New(config))
 
 	r.GET("/ping", func(c *gin.Context) {
@@ -110,8 +122,10 @@ func main() {
 	})
 
 	// --- RUTAS PÚBLICAS (sin autenticación) ---
-	r.POST("/api/v1/auth/login", authHdl.Login)
-	r.POST("/api/v1/auth/refresh", authHdl.Refresh)
+	// V6: Rate limiting en endpoints de autenticación (5 intentos por minuto por IP)
+	authRateLimit := middleware.RateLimitMiddleware(5, 1*time.Minute)
+	r.POST("/api/v1/auth/login", authRateLimit, authHdl.Login)
+	r.POST("/api/v1/auth/refresh", authRateLimit, authHdl.Refresh)
 	r.GET("/api/v1/service-categories", serviceCategoryHdl.GetAll)
 
 	// --- RUTAS PROTEGIDAS (con JWT) ---

@@ -4,8 +4,8 @@ import (
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
 	"errors"
+	"log"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -20,19 +20,29 @@ func NewAuthService(userRepo ports.UserRepository) ports.AuthService {
 	return &authService{userRepo: userRepo}
 }
 
-func getJWTSecret() []byte {
+var jwtSecret []byte
+
+func init() {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = "dental-jc-secret-key-2026" // Cambiar en producción
+		log.Println("ADVERTENCIA: JWT_SECRET no configurado. Defina JWT_SECRET en variables de entorno.")
+		secret = "dev-only-unsafe-secret-must-change-in-production"
 	}
-	return []byte(secret)
+	if len(secret) < 32 {
+		log.Println("ADVERTENCIA: JWT_SECRET debe tener al menos 32 caracteres.")
+	}
+	jwtSecret = []byte(secret)
+}
+
+func getJWTSecret() []byte {
+	return jwtSecret
 }
 
 func (s *authService) generateAccessToken(userID uint) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"type":    "access",
-		"exp":     time.Now().Add(24 * time.Hour).Unix(), // 24 horas
+		"exp":     time.Now().Add(1 * time.Hour).Unix(), // 1 hora
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(getJWTSecret())
@@ -153,7 +163,9 @@ func (s *authService) ValidateToken(tokenStr string) (uint, error) {
 		return 0, errors.New("tipo de token inválido")
 	}
 
-	userIDStr := strconv.FormatFloat(claims["user_id"].(float64), 'f', 0, 64)
-	userID, _ := strconv.ParseUint(userIDStr, 10, 32)
-	return uint(userID), nil
+	userIDFloat, ok := claims["user_id"].(float64)
+	if !ok {
+		return 0, errors.New("token inválido: user_id ausente")
+	}
+	return uint(userIDFloat), nil
 }

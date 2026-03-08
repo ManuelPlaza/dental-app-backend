@@ -1,8 +1,8 @@
 package domain
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required,email,max=255"`
+	Password string `json:"password" binding:"required,min=6,max=128"`
 }
 
 type AuthResponse struct {
