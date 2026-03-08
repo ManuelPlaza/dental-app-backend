@@ -3,6 +3,7 @@ package handler
 import (
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -24,12 +25,12 @@ func (h *AppointmentHandler) Create(c *gin.Context) {
 
 	// BindJSON convierte el texto JSON a la estructura Go
 	if err := c.ShouldBindJSON(&app); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
 
 	if err := h.service.Schedule(&app); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -56,7 +57,7 @@ func (h *AppointmentHandler) Modify(c *gin.Context) {
 	// B. Leer el cuerpo JSON con las nuevas fechas
 	var req ModifyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido"})
 		return
 	}
 
@@ -92,7 +93,8 @@ func (h *AppointmentHandler) Cancel(c *gin.Context) {
 func (h *AppointmentHandler) GetAll(c *gin.Context) {
 	apps, err := h.service.List()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("Error listando citas: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error interno del servidor"})
 		return
 	}
 	c.JSON(http.StatusOK, apps)
@@ -116,7 +118,7 @@ func (h *AppointmentHandler) AdminUpdateStatus(c *gin.Context) {
 	// B. Leer el nuevo status del body
 	var req AdminUpdateStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido"})
 		return
 	}
 
@@ -149,9 +151,15 @@ func (h *AppointmentHandler) GetPaginated(c *gin.Context) {
 		limit = 10
 	}
 
+	// V9: Limitar el máximo de resultados por página
+	if limit > 50 {
+		limit = 50
+	}
+
 	apps, total, err := h.service.ListPaginated(page, limit, status)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("Error en paginación de citas: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error interno del servidor"})
 		return
 	}
 
@@ -173,7 +181,8 @@ func (h *AppointmentHandler) GetPaginated(c *gin.Context) {
 func (h *AppointmentHandler) GetSummary(c *gin.Context) {
 	summary, err := h.service.GetSummary()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("Error obteniendo resumen: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error interno del servidor"})
 		return
 	}
 	c.JSON(http.StatusOK, summary)
@@ -190,7 +199,7 @@ func (h *AppointmentHandler) AdminUpdate(c *gin.Context) {
 
 	var req domain.AdminUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido"})
 		return
 	}
 
@@ -223,7 +232,8 @@ func (h *PaymentHandler) GetByAppointment(c *gin.Context) {
 
 	payments, err := h.service.GetByAppointment(uint(id64))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("Error obteniendo pagos de cita %d: %v", id64, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error interno del servidor"})
 		return
 	}
 

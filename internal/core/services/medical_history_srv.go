@@ -29,12 +29,21 @@ func (s *medicalHistoryService) Create(history *domain.MedicalHistory) error {
 	// Tomar el patient_id de la cita automáticamente
 	history.PatientID = app.PatientID
 
-	// Validaciones médicas
+	// V7: Validaciones médicas con límites de longitud
 	if history.Diagnosis == "" {
 		return errors.New("el campo diagnóstico es obligatorio")
 	}
+	if len(history.Diagnosis) > 5000 {
+		return errors.New("el diagnóstico no puede exceder 5000 caracteres")
+	}
 	if history.Treatment == "" {
 		return errors.New("debe especificar el tratamiento realizado")
+	}
+	if len(history.Treatment) > 5000 {
+		return errors.New("el tratamiento no puede exceder 5000 caracteres")
+	}
+	if len(history.DoctorNotes) > 5000 {
+		return errors.New("las notas no pueden exceder 5000 caracteres")
 	}
 
 	if history.CreatedAt.IsZero() {

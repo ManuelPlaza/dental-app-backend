@@ -1,0 +1,26 @@
+# Archivos de entorno con credenciales
+.env
+.env.local
+.env.production
+
+# Binarios compilados
+main
+*.exe
+*.out
+
+# Archivos del IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Archivos del SO
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logfile
+
+# Temporales
+tmp/
