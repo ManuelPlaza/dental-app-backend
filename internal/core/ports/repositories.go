@@ -11,6 +11,7 @@ type PatientRepository interface {
 	GetAll() ([]domain.Patient, error)
 	FindByDocumentNumber(doc string) (*domain.Patient, error)
 	Update(id uint, patient *domain.Patient) error // <--- NUEVO
+	FindByID(id uint) (*domain.Patient, error)
 }
 
 // ... (al final del archivo)
@@ -49,9 +50,11 @@ type SpecialistRepository interface {
 	Save(s *domain.Specialist) error
 	GetAll() ([]domain.Specialist, error)
 	Inactivate(id uint) error
-	Activate(id uint) error // <--- NUEVO
+	Activate(id uint) error
 	ExistsByID(id uint) (bool, error)
-	GetWithoutUser() ([]domain.Specialist, error) // <--- NUEVO
+	GetWithoutUser() ([]domain.Specialist, error)
+	GetDefault() (*domain.Specialist, error)
+	SetDefault(id uint) error
 }
 
 type ServiceRepository interface {
@@ -68,4 +71,12 @@ type UserRepository interface {
 }
 type ServiceCategoryRepository interface {
 	GetAll() ([]domain.ServiceCategory, error)
+}
+type NotificationRepository interface {
+	Save(n *domain.NotificationQueue) error
+	GetPending() ([]domain.NotificationQueue, error)
+	Update(n *domain.NotificationQueue) error
+	FindByToken(token string) (*domain.NotificationQueue, error)
+	FindByAppointmentAndType(appointmentID uint, nType domain.NotificationType) (*domain.NotificationQueue, error)
+	SaveLog(log *domain.NotificationLog) error
 }

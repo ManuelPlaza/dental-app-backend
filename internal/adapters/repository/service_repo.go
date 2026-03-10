@@ -15,10 +15,10 @@ func NewGormServiceRepo(db *gorm.DB) ports.ServiceRepository {
 	return &gormServiceRepo{db: db}
 }
 
-// GetAll retorna solo los servicios activos (para landing page)
+// GetAll retorna solo los servicios activos y visibles en web (para landing page)
 func (r *gormServiceRepo) GetAll() ([]domain.Service, error) {
 	var services []domain.Service
-	err := r.db.Table("\"Services\"").Where("is_active = ?", true).Find(&services).Error
+	err := r.db.Table("\"Services\"").Where("is_active = ? AND show_on_web = ?", true, true).Find(&services).Error
 	return services, err
 }
 

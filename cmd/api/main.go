@@ -10,6 +10,7 @@ import (
 	"dental-app/internal/adapters/handler"
 	"dental-app/internal/adapters/middleware"
 	"dental-app/internal/adapters/repository"
+	"dental-app/internal/adapters/worker"
 	"dental-app/internal/core/services"
 
 	"github.com/gin-contrib/cors"
@@ -75,7 +76,17 @@ func main() {
 
 	// --- MÓDULO 2: CITAS (Agenda) ---
 	appointRepo := repository.NewGormAppointmentRepo(db)
-	appointSrv := services.NewAppointmentService(appointRepo, patientRepo, serviceRepo)
+
+	// --- MÓDULO NOTIFICACIONES ---
+	notificationRepo := repository.NewGormNotificationRepo(db)
+	notificationSrv := services.NewNotificationService(notificationRepo, appointRepo, patientRepo)
+	notificationHdl := handler.NewNotificationHandler(notificationSrv)
+
+	// --- MÓDULO 5: ESPECIALISTAS (declarado aquí por dependencia en citas) ---
+	specialistRepo := repository.NewGormSpecialistRepo(db)
+
+	// --- MÓDULO CITAS ---
+	appointSrv := services.NewAppointmentService(appointRepo, patientRepo, serviceRepo, specialistRepo, notificationSrv)
 	appointHdl := handler.NewAppointmentHandler(appointSrv)
 
 	// --- MÓDULO 3: PAGOS (Caja) ---
@@ -89,13 +100,18 @@ func main() {
 	historyHdl := handler.NewMedicalHistoryHandler(historySrv)
 
 	// --- MÓDULO 5: ESPECIALISTAS ---
-	specialistRepo := repository.NewGormSpecialistRepo(db)
 	specialistSrv := services.NewSpecialistService(specialistRepo)
 	specialistHdl := handler.NewSpecialistHandler(specialistSrv)
 
 	// --- MÓDULO DASHBOARD ---
 	dashboardSrv := services.NewDashboardService(appointRepo, payRepo, patientRepo)
 	dashboardHdl := handler.NewDashboardHandler(dashboardSrv)
+
+	// --- MÓDULO PÚBLICO (landing page, sin auth) ---
+	publicHdl := handler.NewPublicHandler(serviceSrv, patientSrv, appointSrv)
+
+	notifWorker := worker.NewNotificationWorker(notificationSrv)
+	notifWorker.Start()
 
 	// 4. Configurar Router (Gin)
 	// V6: Usar modo release en producción para no exponer debug info
@@ -127,6 +143,10 @@ func main() {
 	r.POST("/api/v1/auth/login", authRateLimit, authHdl.Login)
 	r.POST("/api/v1/auth/refresh", authRateLimit, authHdl.Refresh)
 	r.GET("/api/v1/service-categories", serviceCategoryHdl.GetAll)
+	r.GET("/api/v1/appointments/confirm", notificationHdl.ConfirmAppointment)
+	r.GET("/api/v1/public/services", publicHdl.GetServices)
+	r.GET("/api/v1/public/patients/document/:document_number", publicHdl.FindPatientByDocument)
+	r.POST("/api/v1/public/appointments", publicHdl.RequestAppointment)
 
 	// --- RUTAS PROTEGIDAS (con JWT) ---
 	v1 := r.Group("/api/v1")
@@ -174,6 +194,7 @@ func main() {
 		v1.GET("/specialists", specialistHdl.GetAll)
 		v1.PATCH("/specialists/:id/inactivate", specialistHdl.Inactivate)
 		v1.PATCH("/specialists/:id/activate", specialistHdl.Activate)
+		v1.PATCH("/specialists/:id/set-default", specialistHdl.SetDefault)
 
 		v1.GET("/services", serviceHdl.GetAll)                      // Pública (landing)
 		v1.GET("/admin/services", serviceHdl.GetAllAdmin)           // Admin (todos)

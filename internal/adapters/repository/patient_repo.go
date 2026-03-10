@@ -56,3 +56,11 @@ func (r *gormPatientRepo) Update(id uint, patient *domain.Patient) error {
 		"emergency_contact_phone":        patient.EmergencyContactPhone,
 	}).Error
 }
+func (r *gormPatientRepo) FindByID(id uint) (*domain.Patient, error) {
+	var patient domain.Patient
+	err := r.db.Table("\"Patient\"").First(&patient, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &patient, nil
+}

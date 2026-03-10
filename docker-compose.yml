@@ -7,14 +7,35 @@ services:
       POSTGRES_DB: dental_db
     ports:
       - "5432:5432"
+    networks:
+      - dental-net
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build: .
     ports:
       - "8080:8080"
+    networks:
+      - dental-net
     environment:
-      # 'db' es el nombre del servicio de arriba, Docker lo resuelve como la IP
       DATABASE_URL: postgres://postgres:postgres@db:5432/dental_db?sslmode=disable
       PORT: 8080
+      GIN_MODE: release
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+      FRONTEND_URL: ${FRONTEND_URL}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
+networks:
+  dental-net:
+    driver: bridge

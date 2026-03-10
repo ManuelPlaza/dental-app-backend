@@ -25,7 +25,8 @@ CREATE TABLE "Services" (
     "description" TEXT,
     "price" DECIMAL(10, 2) NOT NULL,
     "duration_minutes" INTEGER NOT NULL DEFAULT 60,
-    "is_active" BOOLEAN DEFAULT TRUE
+    "is_active" BOOLEAN DEFAULT TRUE,
+    "show_on_web" BOOLEAN DEFAULT FALSE
 );
 
 -- 4. Pacientes
@@ -51,6 +52,7 @@ CREATE TABLE "Specialists" (
     "license_number" VARCHAR(100) NOT NULL,
     "phone" VARCHAR(50),
     "is_active" BOOLEAN DEFAULT TRUE,
+    "is_default" BOOLEAN DEFAULT FALSE,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -102,6 +104,39 @@ CREATE TABLE "LoyaltyTransactions" (
     "description" VARCHAR(255),
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Tabla de cola de notificaciones
+CREATE TABLE "NotificationQueue" (
+    id SERIAL PRIMARY KEY,
+    appointment_id INTEGER NOT NULL REFERENCES "Appointments"(id),
+    patient_id INTEGER NOT NULL REFERENCES "Patient"(id),
+    type VARCHAR(50) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    scheduled_at TIMESTAMP NOT NULL,
+    sent_at TIMESTAMP,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    max_attempts INTEGER NOT NULL DEFAULT 3,
+    token VARCHAR(100) UNIQUE,
+    error_log TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_notification_status ON "NotificationQueue"(status);
+CREATE INDEX idx_notification_scheduled ON "NotificationQueue"(scheduled_at);
+CREATE INDEX idx_notification_token ON "NotificationQueue"(token);
+CREATE INDEX idx_notification_appointment ON "NotificationQueue"(appointment_id);
+
+-- Tabla de logs de notificaciones
+CREATE TABLE "NotificationLogs" (
+    id SERIAL PRIMARY KEY,
+    notification_id INTEGER NOT NULL REFERENCES "NotificationQueue"(id),
+    event VARCHAR(50) NOT NULL,
+    detail TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_notif_log_notification ON "NotificationLogs"(notification_id);
 
 -- ... (resto del código arriba) ...
 
