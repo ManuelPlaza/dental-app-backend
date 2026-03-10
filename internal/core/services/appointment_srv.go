@@ -4,6 +4,7 @@ import (
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
 	"errors"
+	"log"
 	"time"
 )
 
@@ -11,14 +12,28 @@ var bogotaLoc, _ = time.LoadLocation("America/Bogota")
 
 // 1. DEFINICIÓN DE LA ESTRUCTURA
 type appointmentService struct {
-	repo        ports.AppointmentRepository
-	patientRepo ports.PatientRepository
-	serviceRepo ports.ServiceRepository
+	repo            ports.AppointmentRepository
+	patientRepo     ports.PatientRepository
+	serviceRepo     ports.ServiceRepository
+	specialistRepo  ports.SpecialistRepository
+	notificationSrv ports.NotificationService
 }
 
 // 2. CONSTRUCTOR
-func NewAppointmentService(repo ports.AppointmentRepository, patientRepo ports.PatientRepository, serviceRepo ports.ServiceRepository) ports.AppointmentService {
-	return &appointmentService{repo: repo, patientRepo: patientRepo, serviceRepo: serviceRepo}
+func NewAppointmentService(
+	repo ports.AppointmentRepository,
+	patientRepo ports.PatientRepository,
+	serviceRepo ports.ServiceRepository,
+	specialistRepo ports.SpecialistRepository,
+	notificationSrv ports.NotificationService,
+) ports.AppointmentService {
+	return &appointmentService{
+		repo:            repo,
+		patientRepo:     patientRepo,
+		serviceRepo:     serviceRepo,
+		specialistRepo:  specialistRepo,
+		notificationSrv: notificationSrv,
+	}
 }
 
 // Helper: validar horarios de atención en hora de Bogotá
@@ -115,7 +130,98 @@ func (s *appointmentService) Schedule(app *domain.Appointment) error {
 		app.Status = "pending"
 	}
 
-	return s.repo.Save(app)
+	if err := s.repo.Save(app); err != nil {
+		return err
+	}
+
+	go func() {
+		if err := s.notificationSrv.ScheduleConfirmation(app); err != nil {
+			log.Printf("⚠️ Error confirmación cita %d: %s", app.ID, err.Error())
+		}
+		if err := s.notificationSrv.ScheduleReminders(app); err != nil {
+			log.Printf("⚠️ Error recordatorios cita %d: %s", app.ID, err.Error())
+		}
+	}()
+
+	return nil
+}
+
+// ScheduleFromWeb crea una cita desde la landing page pública.
+// Reglas de seguridad:
+//   - status siempre "pending" (ignorado del request)
+//   - specialist_id nunca asignado (admin lo asigna después)
+//   - end_time calculado automáticamente desde duration_minutes del servicio
+func (s *appointmentService) ScheduleFromWeb(req *domain.PublicAppointmentRequest) (*domain.Appointment, error) {
+	// 1. Validar campos básicos
+	if len(req.DocumentNumber) < 5 {
+		return nil, errors.New("número de documento inválido")
+	}
+	if len(req.Phone) < 7 {
+		return nil, errors.New("teléfono inválido")
+	}
+
+	// 2. Validar horario de atención
+	startBogota := req.StartTime.Time.In(bogotaLoc)
+	if err := validBusinessHours(startBogota); err != nil {
+		return nil, err
+	}
+	if startBogota.Before(time.Now().In(bogotaLoc)) {
+		return nil, errors.New("no puedes agendar una cita en una fecha y hora pasada")
+	}
+
+	// 3. Obtener servicio para calcular end_time y precio histórico
+	svc, err := s.serviceRepo.GetByID(req.ServiceID)
+	if err != nil {
+		return nil, errors.New("servicio no encontrado")
+	}
+	endBogota := startBogota.Add(time.Duration(svc.DurationMinutes) * time.Minute)
+
+	// 4. Buscar o crear paciente
+	patient, err := s.patientRepo.FindByDocumentNumber(req.DocumentNumber)
+	if err != nil {
+		patient = &domain.Patient{
+			DocumentNumber: req.DocumentNumber,
+			FirstName:      req.FirstName,
+			LastName:       req.LastName,
+			Phone:          req.Phone,
+			Email:          req.Email,
+		}
+		if err := s.patientRepo.Save(patient); err != nil {
+			return nil, errors.New("error registrando paciente")
+		}
+	}
+
+	// 5. Obtener especialista default para satisfacer la FK (admin reasigna después)
+	defaultSpecialist, err := s.specialistRepo.GetDefault()
+	if err != nil {
+		return nil, errors.New("no hay un especialista principal configurado; contacta al administrador")
+	}
+
+	// 6. Construir la cita — status y specialist SIEMPRE forzados internamente
+	app := &domain.Appointment{
+		PatientID:       patient.ID,
+		ServiceID:       req.ServiceID,
+		SpecialistID:    defaultSpecialist.ID, // FK satisfecha; admin reasigna desde el panel
+		Status:          "pending",             // Siempre pending, nunca del request
+		StartTime:       domain.BogotaTime{Time: startBogota},
+		EndTime:         domain.BogotaTime{Time: endBogota},
+		HistoricalPrice: svc.Price,
+		Notes:           req.Notes,
+	}
+
+	if err := s.repo.Save(app); err != nil {
+		return nil, err
+	}
+
+	// 6. Notificación de confirmación (async)
+	app.Patient = *patient
+	go func() {
+		if err := s.notificationSrv.ScheduleConfirmation(app); err != nil {
+			log.Printf("⚠️ Error confirmación cita web %d: %s", app.ID, err.Error())
+		}
+	}()
+
+	return app, nil
 }
 
 // 4. MÉTODO MODIFICAR (Modify)

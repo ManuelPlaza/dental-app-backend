@@ -11,6 +11,7 @@ type Specialist struct {
 	LicenseNumber string    `json:"license_number"`
 	Phone         string    `json:"phone"`
 	IsActive      bool      `json:"is_active"`
+	IsDefault     bool      `json:"is_default"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }

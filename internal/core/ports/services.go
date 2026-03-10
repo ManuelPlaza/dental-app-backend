@@ -15,13 +15,14 @@ type PatientService interface {
 
 type AppointmentService interface {
 	Schedule(appointment *domain.Appointment) error
+	ScheduleFromWeb(req *domain.PublicAppointmentRequest) (*domain.Appointment, error)
 	Modify(id uint, newStart, newEnd time.Time) error
 	Cancel(id uint) error
 	List() ([]domain.Appointment, error)
 	AdminUpdateStatus(id uint, status string) error
-	ListPaginated(page, limit int, status string) ([]domain.Appointment, int64, error) // <--- status agregado
-	GetSummary() (map[string]int64, error)                                             // <--- NUEVO
-	AdminUpdate(id uint, req domain.AdminUpdateRequest) error                          // <--- NUEVO
+	ListPaginated(page, limit int, status string) ([]domain.Appointment, int64, error)
+	GetSummary() (map[string]int64, error)
+	AdminUpdate(id uint, req domain.AdminUpdateRequest) error
 }
 
 // ... (interfaces anteriores)
@@ -44,7 +45,8 @@ type SpecialistService interface {
 	List() ([]domain.Specialist, error)
 	Inactivate(id uint) error
 	Activate(id uint) error
-	GetWithoutUser() ([]domain.Specialist, error) // <--- NUEVO
+	GetWithoutUser() ([]domain.Specialist, error)
+	SetDefault(id uint) error
 }
 
 type DashboardService interface {
@@ -67,4 +69,10 @@ type ServiceService interface {
 
 type ServiceCategoryService interface {
 	List() ([]domain.ServiceCategory, error)
+}
+type NotificationService interface {
+	ScheduleConfirmation(appointment *domain.Appointment) error
+	ScheduleReminders(appointment *domain.Appointment) error
+	ProcessPending() error
+	ConfirmAppointment(token string) error
 }

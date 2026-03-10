@@ -69,3 +69,25 @@ func (r *gormSpecialistRepo) GetWithoutUser() ([]domain.Specialist, error) {
 func (r *gormSpecialistRepo) Activate(id uint) error {
 	return r.db.Table("\"Specialists\"").Where("id = ?", id).Update("is_active", true).Error
 }
+
+// GetDefault retorna el especialista marcado como principal para asignar citas web.
+func (r *gormSpecialistRepo) GetDefault() (*domain.Specialist, error) {
+	var s domain.Specialist
+	err := r.db.Table(`"Specialists"`).
+		Where("is_default = ? AND is_active = ?", true, true).
+		First(&s).Error
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+// SetDefault desmarca todos y marca uno como principal (solo uno puede serlo).
+func (r *gormSpecialistRepo) SetDefault(id uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table(`"Specialists"`).Where("1 = 1").Update("is_default", false).Error; err != nil {
+			return err
+		}
+		return tx.Table(`"Specialists"`).Where("id = ?", id).Update("is_default", true).Error
+	})
+}

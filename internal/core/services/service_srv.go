@@ -58,6 +58,7 @@ func (s *serviceService) Update(id uint, service *domain.Service) error {
 	existing.Price = service.Price
 	existing.DurationMinutes = service.DurationMinutes
 	existing.CategoryID = service.CategoryID
+	existing.ShowOnWeb = service.ShowOnWeb
 
 	return s.repo.Update(existing)
 }

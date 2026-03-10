@@ -96,3 +96,25 @@ func (h *SpecialistHandler) Activate(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "specialist activated"})
 }
+
+// SetDefault marca un especialista como el principal para recibir citas web.
+// Desmarca automáticamente al que estuviera marcado antes.
+func (h *SpecialistHandler) SetDefault(c *gin.Context) {
+	idStr := c.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil || id64 == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id inválido"})
+		return
+	}
+
+	if err := h.service.SetDefault(uint(id64)); err != nil {
+		if errors.Is(err, domain.ErrSpecialistNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Especialista marcado como principal"})
+}

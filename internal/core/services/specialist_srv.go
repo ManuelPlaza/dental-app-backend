@@ -56,3 +56,14 @@ func (s *specialistService) GetWithoutUser() ([]domain.Specialist, error) {
 func (s *specialistService) Activate(id uint) error {
 	return s.repo.Activate(id)
 }
+
+func (s *specialistService) SetDefault(id uint) error {
+	exists, err := s.repo.ExistsByID(id)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return domain.ErrSpecialistNotFound
+	}
+	return s.repo.SetDefault(id)
+}

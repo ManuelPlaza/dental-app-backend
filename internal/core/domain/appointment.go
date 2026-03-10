@@ -111,6 +111,22 @@ func (Appointment) TableName() string {
 	return "\"Appointments\""
 }
 
+// PublicAppointmentRequest es el payload del endpoint público de la landing page.
+// Nunca acepta status, specialist_id ni campos administrativos.
+type PublicAppointmentRequest struct {
+	// Datos del paciente
+	DocumentNumber string `json:"document_number" binding:"required"`
+	FirstName      string `json:"first_name"      binding:"required"`
+	LastName       string `json:"last_name"       binding:"required"`
+	Phone          string `json:"phone"           binding:"required"`
+	Email          string `json:"email"`
+	BirthDate      string `json:"birth_date"`
+	// Datos de la cita
+	ServiceID uint       `json:"service_id" binding:"required"`
+	StartTime BogotaTime `json:"start_time"  binding:"required"`
+	Notes     string     `json:"notes"`
+}
+
 type AdminUpdateRequest struct {
 	Status             string      `json:"status"`
 	SpecialistID       *uint       `json:"specialist_id"`
