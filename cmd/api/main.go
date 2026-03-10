@@ -120,17 +120,21 @@ func main() {
 	}
 	r := gin.Default()
 
-	// --- CONFIGURACIÓN CORS (V2: Restringir orígenes permitidos) ---
+	// --- CONFIGURACIÓN CORS ---
 	config := cors.DefaultConfig()
 	allowedOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
 	if allowedOrigins != "" {
-		config.AllowOrigins = strings.Split(allowedOrigins, ",")
+		parts := strings.Split(allowedOrigins, ",")
+		for i, o := range parts {
+			parts[i] = strings.TrimSpace(o)
+		}
+		config.AllowOrigins = parts
 	} else {
-		// Solo localhost en desarrollo
 		config.AllowOrigins = []string{"http://localhost:3000", "http://localhost:5173"}
 	}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	config.AllowCredentials = true
 	r.Use(cors.New(config))
 
 	r.GET("/ping", func(c *gin.Context) {
