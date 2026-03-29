@@ -28,6 +28,7 @@ func (r *gormMedicalHistoryRepo) GetByPatientID(patientID uint) ([]domain.Medica
 		Preload("Appointment").
 		Preload("Appointment.Patient").
 		Preload("Appointment.Specialist").
+		Preload("Appointment.Service").
 		Where("patient_id = ?", patientID).
 		Order("created_at desc"). // Lo más reciente primero
 		Find(&histories).Error
@@ -42,6 +43,7 @@ func (r *gormMedicalHistoryRepo) GetAll() ([]domain.MedicalHistory, error) {
 		Preload("Appointment").
 		Preload("Appointment.Patient").
 		Preload("Appointment.Specialist").
+		Preload("Appointment.Service").
 		Order("created_at DESC").
 		Find(&histories).Error
 	return histories, err

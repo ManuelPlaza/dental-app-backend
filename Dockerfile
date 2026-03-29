@@ -26,8 +26,9 @@ RUN apk add --no-cache ca-certificates tzdata
 
 WORKDIR /app
 
-# Copiar el binario desde la etapa de construcción
+# Copiar el binario y los assets estáticos desde la etapa de construcción
 COPY --from=builder /app/main .
+COPY --from=builder /app/assets ./assets
 
 # Railway usará la variable PORT automáticamente
 EXPOSE ${PORT}

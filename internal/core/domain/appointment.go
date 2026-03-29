@@ -95,6 +95,7 @@ type Appointment struct {
 	SpecialistID       uint       `json:"specialist_id"`
 	Specialist         Specialist `json:"specialist" gorm:"foreignKey:SpecialistID"`
 	ServiceID          uint       `json:"service_id"`
+	Service            Service    `json:"service" gorm:"foreignKey:ServiceID"`
 	StartTime          BogotaTime `json:"start_time"`
 	EndTime            BogotaTime `json:"end_time"`
 	Status             string     `json:"status"`

@@ -10,6 +10,7 @@ import (
 	"dental-app/internal/adapters/handler"
 	"dental-app/internal/adapters/middleware"
 	"dental-app/internal/adapters/repository"
+	"dental-app/internal/adapters/sse"
 	"dental-app/internal/adapters/worker"
 	"dental-app/internal/core/services"
 
@@ -107,6 +108,12 @@ func main() {
 	dashboardSrv := services.NewDashboardService(appointRepo, payRepo, patientRepo)
 	dashboardHdl := handler.NewDashboardHandler(dashboardSrv)
 
+	// --- MÓDULO BANNERS ---
+	bannerHub := sse.NewBannerHub()
+	bannerRepo := repository.NewGormBannerRepo(db)
+	bannerSrv := services.NewBannerService(bannerRepo)
+	bannerHdl := handler.NewBannerHandler(bannerSrv, bannerHub)
+
 	// --- MÓDULO PÚBLICO (landing page, sin auth) ---
 	publicHdl := handler.NewPublicHandler(serviceSrv, patientSrv, appointSrv)
 
@@ -151,6 +158,8 @@ func main() {
 	r.GET("/api/v1/public/services", publicHdl.GetServices)
 	r.GET("/api/v1/public/patients/document/:document_number", publicHdl.FindPatientByDocument)
 	r.POST("/api/v1/public/appointments", publicHdl.RequestAppointment)
+	r.GET("/api/v1/public/banners", bannerHdl.GetActive)
+	r.GET("/api/v1/public/banners/events", bannerHdl.StreamEvents)
 
 	// --- RUTAS PROTEGIDAS (con JWT) ---
 	v1 := r.Group("/api/v1")
@@ -200,7 +209,14 @@ func main() {
 		v1.PATCH("/specialists/:id/activate", specialistHdl.Activate)
 		v1.PATCH("/specialists/:id/set-default", specialistHdl.SetDefault)
 
-		v1.GET("/services", serviceHdl.GetAll)                      // Pública (landing)
+		// Rutas Banners (admin)
+		v1.POST("/banners", bannerHdl.Create)
+		v1.GET("/banners", bannerHdl.GetAll)
+		v1.GET("/banners/:id", bannerHdl.GetByID)
+		v1.PUT("/banners/:id", bannerHdl.Update)
+		v1.DELETE("/banners/:id", bannerHdl.Delete)
+
+		v1.GET("/services", serviceHdl.GetAll)                      // Admin (con auth, mismo handler)
 		v1.GET("/admin/services", serviceHdl.GetAllAdmin)           // Admin (todos)
 		v1.POST("/services", serviceHdl.Create)                     // <--- NUEVO
 		v1.PUT("/services/:id", serviceHdl.Update)                  // <--- NUEVO

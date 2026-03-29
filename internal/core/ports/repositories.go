@@ -80,3 +80,12 @@ type NotificationRepository interface {
 	FindByAppointmentAndType(appointmentID uint, nType domain.NotificationType) (*domain.NotificationQueue, error)
 	SaveLog(log *domain.NotificationLog) error
 }
+
+type BannerRepository interface {
+	Save(banner *domain.Banner) error
+	GetByID(id uint) (*domain.Banner, error)
+	GetAll() ([]domain.Banner, error)
+	GetActive() ([]domain.Banner, error)
+	Update(banner *domain.Banner) error
+	SoftDelete(id uint) error
+}

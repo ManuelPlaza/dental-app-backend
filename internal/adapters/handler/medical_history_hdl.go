@@ -4,6 +4,7 @@ import (
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
 	"dental-app/internal/utils"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -87,6 +88,7 @@ func (h *MedicalHistoryHandler) DownloadPDF(c *gin.Context) {
 	// Asegúrate de importar "dental-app/internal/core/services"
 	pdfBytes, err := utils.GenerateHistoryPDF(latestHistory)
 	if err != nil {
+		log.Printf("❌ Error generando PDF para paciente %d: %v", patientID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error generando PDF"})
 		return
 	}

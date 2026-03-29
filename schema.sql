@@ -138,7 +138,26 @@ CREATE TABLE "NotificationLogs" (
 
 CREATE INDEX idx_notif_log_notification ON "NotificationLogs"(notification_id);
 
--- ... (resto del código arriba) ...
+CREATE TABLE "Banners" (
+    "id"                SERIAL PRIMARY KEY,
+    "title"             VARCHAR(255) NOT NULL,
+    "description"       TEXT,
+    "image_url_desktop" VARCHAR(500) NOT NULL,
+    "image_url_mobile"  VARCHAR(500),
+    "redirect_url"      VARCHAR(500),
+    "start_time"        TIMESTAMP NOT NULL,
+    "end_time"          TIMESTAMP NOT NULL,
+    "is_active"         BOOLEAN NOT NULL DEFAULT TRUE,
+    "priority"          INTEGER NOT NULL DEFAULT 0,
+    "created_at"        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at"        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deleted_at"        TIMESTAMP
+);
+
+CREATE INDEX idx_banners_start_time ON "Banners" ("start_time");
+CREATE INDEX idx_banners_end_time   ON "Banners" ("end_time");
+CREATE INDEX idx_banners_is_active  ON "Banners" ("is_active");
+
 
 -- RELACIONES (Foreign Keys) - ASEGÚRATE DE COPIAR TODO ESTE BLOQUE FINAL
 ALTER TABLE "Services" ADD CONSTRAINT "services_category_fk" FOREIGN KEY ("category_id") REFERENCES "ServiceCategories"("id");

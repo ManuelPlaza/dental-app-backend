@@ -60,15 +60,18 @@ func (h *PaymentHandler) GetBalance(c *gin.Context) {
 		"total_cost":      total,
 		"total_paid":      paid,
 		"pending_balance": pending,
-		"status":          getItemStatus(pending), // Una funcioncita visual
+		"status":          getPaymentStatus(paid, pending),
 	})
 }
 
-func getItemStatus(pending float64) string {
+func getPaymentStatus(paid, pending float64) string {
 	if pending <= 0 {
-		return "PAID_IN_FULL" // Pagado total
+		return "pagado"
 	}
-	return "PARTIAL" // Debe dinero
+	if paid == 0 {
+		return "pendiente"
+	}
+	return "parcial"
 }
 
 // Update maneja PUT /payments/:id

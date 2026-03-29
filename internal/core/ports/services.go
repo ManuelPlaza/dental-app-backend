@@ -76,3 +76,12 @@ type NotificationService interface {
 	ProcessPending() error
 	ConfirmAppointment(token string) error
 }
+
+type BannerService interface {
+	Create(banner *domain.Banner) error
+	Update(id uint, banner *domain.Banner) error
+	Delete(id uint) error
+	GetByID(id uint) (*domain.Banner, error)
+	GetAll() ([]domain.Banner, error)
+	GetActive() ([]domain.Banner, error)
+}
