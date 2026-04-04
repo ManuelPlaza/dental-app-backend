@@ -30,7 +30,12 @@ func (r *gormPaymentRepo) GetAll() ([]domain.Payment, error) {
 }
 func (r *gormPaymentRepo) GetByAppointmentID(appID uint) ([]domain.Payment, error) {
 	var payments []domain.Payment
-	err := r.db.Table("\"Payments\"").Where("appointment_id = ?", appID).Find(&payments).Error
+	// Excluye registros placeholder (amount=0, method=pending) creados al completar la cita.
+	// Solo retorna pagos reales con monto > 0.
+	err := r.db.Table("\"Payments\"").
+		Where("appointment_id = ? AND amount > 0", appID).
+		Order("payment_date ASC").
+		Find(&payments).Error
 	return payments, err
 }
 func (r *gormPaymentRepo) GetByID(id uint) (*domain.Payment, error) {
