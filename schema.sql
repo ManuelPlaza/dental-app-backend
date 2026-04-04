@@ -191,3 +191,33 @@ ALTER TABLE "MedicalHistory" ADD COLUMN next_appointment_date TIMESTAMP;
 
 ALTER TABLE "LoyaltyTransactions" ADD CONSTRAINT "loyalty_patient_fk" FOREIGN KEY ("patient_id") REFERENCES "Patient"("id");
 ALTER TABLE "LoyaltyTransactions" ADD CONSTRAINT "loyalty_appointment_fk" FOREIGN KEY ("appointment_id") REFERENCES "Appointments"("id");
+
+-- =====================================================================
+-- MIGRACIÓN: Links de Pago Nequi
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS "PaymentLinks" (
+    id              SERIAL PRIMARY KEY,
+    appointment_id  INTEGER NOT NULL,
+    amount          NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+    token           UUID NOT NULL UNIQUE,
+    nequi_txn_id    VARCHAR(100),
+    status          VARCHAR(20) NOT NULL DEFAULT 'pending'
+                    CHECK (status IN ('pending','paid','expired','rejected','cancelled')),
+    phone_number    VARCHAR(20) NOT NULL,
+    expires_at      TIMESTAMPTZ NOT NULL,
+    paid_at         TIMESTAMPTZ,
+    created_by      INTEGER,
+    webhook_payload TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_links_token       ON "PaymentLinks"(token);
+CREATE INDEX IF NOT EXISTS idx_payment_links_appointment ON "PaymentLinks"(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_payment_links_status      ON "PaymentLinks"(status);
+CREATE INDEX IF NOT EXISTS idx_payment_links_expires_at  ON "PaymentLinks"(expires_at);
+CREATE INDEX IF NOT EXISTS idx_payment_links_nequi_txn   ON "PaymentLinks"(nequi_txn_id) WHERE nequi_txn_id IS NOT NULL;
+
+ALTER TABLE "PaymentLinks"
+    ADD CONSTRAINT fk_payment_links_appointment
+    FOREIGN KEY (appointment_id) REFERENCES "Appointments"(id);

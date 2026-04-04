@@ -85,3 +85,29 @@ type BannerService interface {
 	GetAll() ([]domain.Banner, error)
 	GetActive() ([]domain.Banner, error)
 }
+
+type PaymentLinkService interface {
+	// Generate valida saldo, crea el link y dispara la notificación Nequi.
+	// amount puede ser parcial (> 0 y <= saldo pendiente).
+	Generate(appointmentID uint, amount float64, phone string, createdBy uint) (*domain.PaymentLink, error)
+	// GetByToken consulta el estado de un link (endpoint público).
+	GetByToken(token string) (*domain.PaymentLink, error)
+	// GetByAppointment lista todos los links de una cita (admin).
+	GetByAppointment(appointmentID uint) ([]domain.PaymentLink, error)
+	// Cancel anula un link pendiente desde el admin.
+	Cancel(token string) error
+	// ProcessWebhook procesa el callback de Nequi y registra el pago automáticamente.
+	ProcessWebhook(payload *NequiWebhookPayload, rawBody string) error
+	// ExpireStale lo llama el worker periódicamente.
+	ExpireStale() error
+}
+
+// NequiWebhookPayload estructura del callback de Nequi.
+type NequiWebhookPayload struct {
+	TransactionID string  `json:"transactionId"`
+	Reference     string  `json:"reference"` // token UUID del PaymentLink
+	Status        string  `json:"status"`    // "SUCCESS" | "REJECTED" | "EXPIRED"
+	Amount        float64 `json:"amount"`
+	PhoneNumber   string  `json:"phoneNumber"`
+	Timestamp     string  `json:"timestamp"`
+}

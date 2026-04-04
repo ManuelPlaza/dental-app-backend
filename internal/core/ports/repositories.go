@@ -89,3 +89,14 @@ type BannerRepository interface {
 	Update(banner *domain.Banner) error
 	SoftDelete(id uint) error
 }
+
+type PaymentLinkRepository interface {
+	Save(link *domain.PaymentLink) error
+	GetByToken(token string) (*domain.PaymentLink, error)
+	GetByNequiTxnID(txnID string) (*domain.PaymentLink, error)
+	GetByAppointmentID(appointmentID uint) ([]domain.PaymentLink, error)
+	UpdateStatus(id uint, status domain.PaymentLinkStatus, paidAt *time.Time, webhookPayload string) error
+	UpdateNequiTxnID(id uint, txnID string) error
+	CancelPendingByAppointment(appointmentID uint) error
+	ExpireStale() error // marca como expired los links con expires_at < now y status=pending
+}

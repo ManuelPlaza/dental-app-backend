@@ -9,6 +9,7 @@ import (
 
 	"dental-app/internal/adapters/handler"
 	"dental-app/internal/adapters/middleware"
+	"dental-app/internal/adapters/nequi"
 	"dental-app/internal/adapters/repository"
 	"dental-app/internal/adapters/sse"
 	"dental-app/internal/adapters/worker"
@@ -114,11 +115,20 @@ func main() {
 	bannerSrv := services.NewBannerService(bannerRepo)
 	bannerHdl := handler.NewBannerHandler(bannerSrv, bannerHub)
 
+	// --- MÓDULO LINKS DE PAGO NEQUI ---
+	nequiClient := nequi.NewClient()
+	paymentLinkRepo := repository.NewGormPaymentLinkRepo(db)
+	paymentLinkSrv := services.NewPaymentLinkService(paymentLinkRepo, payRepo, appointRepo, nequiClient)
+	paymentLinkHdl := handler.NewPaymentLinkHandler(paymentLinkSrv)
+
 	// --- MÓDULO PÚBLICO (landing page, sin auth) ---
 	publicHdl := handler.NewPublicHandler(serviceSrv, patientSrv, appointSrv)
 
 	notifWorker := worker.NewNotificationWorker(notificationSrv)
 	notifWorker.Start()
+
+	payLinkWorker := worker.NewPaymentLinkWorker(paymentLinkSrv)
+	payLinkWorker.Start()
 
 	// 4. Configurar Router (Gin)
 	// V6: Usar modo release en producción para no exponer debug info
@@ -160,6 +170,11 @@ func main() {
 	r.POST("/api/v1/public/appointments", publicHdl.RequestAppointment)
 	r.GET("/api/v1/public/banners", bannerHdl.GetActive)
 	r.GET("/api/v1/public/banners/events", bannerHdl.StreamEvents)
+
+	// Link de pago público (sin auth) — rate limited
+	payRateLimit := middleware.RateLimitMiddleware(10, 1*time.Minute)
+	r.GET("/api/v1/pay/:token", payRateLimit, paymentLinkHdl.GetStatus)
+	r.POST("/api/v1/webhooks/nequi", paymentLinkHdl.HandleNequiWebhook)
 
 	// --- RUTAS PROTEGIDAS (con JWT) ---
 	v1 := r.Group("/api/v1")
@@ -215,6 +230,11 @@ func main() {
 		v1.GET("/banners/:id", bannerHdl.GetByID)
 		v1.PUT("/banners/:id", bannerHdl.Update)
 		v1.DELETE("/banners/:id", bannerHdl.Delete)
+
+		// Rutas Links de Pago Nequi (admin)
+		v1.POST("/appointments/:id/payment-links", paymentLinkHdl.Generate)
+		v1.GET("/appointments/:id/payment-links", paymentLinkHdl.GetByAppointment)
+		v1.DELETE("/payment-links/:token", paymentLinkHdl.Cancel)
 
 		v1.GET("/services", serviceHdl.GetAll)                      // Admin (con auth, mismo handler)
 		v1.GET("/admin/services", serviceHdl.GetAllAdmin)           // Admin (todos)
