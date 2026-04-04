@@ -20,12 +20,13 @@ type AppointmentRepository interface {
 	GetByID(id uint) (*domain.Appointment, error)
 	Update(appointment *domain.Appointment) error
 	GetAll() ([]domain.Appointment, error)
-	GetPaginated(page, limit int, status string) ([]domain.Appointment, int64, error) // <--- status agregado
+	GetPaginated(page, limit int, status string) ([]domain.Appointment, int64, error)
 	GetSummary() (map[string]int64, error)
 	HasSpecialistConflict(specialistID uint, start, end time.Time, excludeID uint) (bool, error)
-	GetToday() ([]domain.Appointment, error)                    // <--- NUEVO
-	GetMonthlyCancellations() ([]map[string]interface{}, error) // <--- NUEVO
-	GetTopPatients(limit int) ([]map[string]interface{}, error) // <--- NUEVO
+	GetToday() ([]domain.Appointment, error)
+	GetMonthlyCancellations() ([]map[string]interface{}, error)
+	GetTopPatients(limit int) ([]map[string]interface{}, error)
+	AutoCancelExpired(confirmHours int) (int64, error) // cancela pending cuyo límite de confirmación venció
 }
 
 // ... (interfaces anteriores)

@@ -5,6 +5,8 @@ import (
 	"dental-app/internal/core/ports"
 	"errors"
 	"log"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -396,4 +398,16 @@ func (s *appointmentService) AdminUpdate(id uint, req domain.AdminUpdateRequest)
 	}
 
 	return s.repo.Update(app)
+}
+
+// AutoCancelExpired cancela citas pending cuyo plazo de confirmación venció.
+// Lee APPOINTMENT_CONFIRM_HOURS del entorno (default: 1).
+func (s *appointmentService) AutoCancelExpired() (int64, error) {
+	confirmHours := 1
+	if v := os.Getenv("APPOINTMENT_CONFIRM_HOURS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			confirmHours = n
+		}
+	}
+	return s.repo.AutoCancelExpired(confirmHours)
 }

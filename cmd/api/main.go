@@ -130,6 +130,9 @@ func main() {
 	payLinkWorker := worker.NewPaymentLinkWorker(paymentLinkSrv)
 	payLinkWorker.Start()
 
+	appointWorker := worker.NewAppointmentWorker(appointSrv)
+	appointWorker.Start()
+
 	// 4. Configurar Router (Gin)
 	// V6: Usar modo release en producción para no exponer debug info
 	if os.Getenv("GIN_MODE") == "release" {

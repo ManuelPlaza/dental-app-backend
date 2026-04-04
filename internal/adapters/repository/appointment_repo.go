@@ -191,3 +191,22 @@ func (r *gormAppointmentRepo) GetTopPatients(limit int) ([]map[string]interface{
 	}
 	return data, nil
 }
+
+// AutoCancelExpired cancela citas 'pending' cuyo límite de confirmación ya venció.
+// confirmHours: horas antes de la cita que se exige confirmación (ej: 1 → 1h antes).
+// Lógica: si start_time - confirmHours <= ahora → el plazo de confirmación venció.
+func (r *gormAppointmentRepo) AutoCancelExpired(confirmHours int) (int64, error) {
+	// deadline = start_time - confirmHours
+	// Si deadline <= now → cancelar
+	// Equivalente SQL: start_time <= now + confirmHours (traemos las que ya superaron el límite)
+	deadline := time.Now().Add(time.Duration(confirmHours) * time.Hour)
+
+	result := r.db.Table("\"Appointments\"").
+		Where("status = ? AND start_time <= ?", "pending", deadline).
+		Updates(map[string]interface{}{
+			"status":              "cancelled",
+			"cancellation_reason": "auto_expired",
+			"cancellation_notes":  "Cancelada automáticamente: no se confirmó antes del límite establecido.",
+		})
+	return result.RowsAffected, result.Error
+}

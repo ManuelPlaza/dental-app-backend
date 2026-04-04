@@ -23,6 +23,7 @@ type AppointmentService interface {
 	ListPaginated(page, limit int, status string) ([]domain.Appointment, int64, error)
 	GetSummary() (map[string]int64, error)
 	AdminUpdate(id uint, req domain.AdminUpdateRequest) error
+	AutoCancelExpired() (int64, error) // lee APPOINTMENT_CONFIRM_HOURS del env
 }
 
 // ... (interfaces anteriores)
