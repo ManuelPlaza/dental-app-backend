@@ -15,24 +15,33 @@ type PublicHandler struct {
 	serviceSvc     ports.ServiceService
 	patientSvc     ports.PatientService
 	appointmentSvc ports.AppointmentService
+	consentRepo    ports.DataConsentRepository
 }
 
-func NewPublicHandler(serviceSvc ports.ServiceService, patientSvc ports.PatientService, appointmentSvc ports.AppointmentService) *PublicHandler {
+func NewPublicHandler(
+	serviceSvc ports.ServiceService,
+	patientSvc ports.PatientService,
+	appointmentSvc ports.AppointmentService,
+	consentRepo ports.DataConsentRepository,
+) *PublicHandler {
 	return &PublicHandler{
 		serviceSvc:     serviceSvc,
 		patientSvc:     patientSvc,
 		appointmentSvc: appointmentSvc,
+		consentRepo:    consentRepo,
 	}
 }
 
 // maskedPatientResponse es la respuesta pública con PII enmascarada (ISO 27001 A.8.11).
-// No expone ID interno ni documento completo.
+// Incluye has_consent para que el frontend sepa si debe mostrar el checkbox Ley 1581.
 type maskedPatientResponse struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Phone     string `json:"phone"`
-	Email     string `json:"email"`
-	Exists    bool   `json:"exists"`
+	FirstName   string  `json:"first_name"`
+	LastName    string  `json:"last_name"`
+	Phone       string  `json:"phone"`
+	Email       string  `json:"email"`
+	Exists      bool    `json:"exists"`
+	HasConsent  bool    `json:"has_consent"`
+	ConsentDate *string `json:"consent_date,omitempty"` // fecha legible para mostrar en UI
 }
 
 // maskName enmascara un nombre dejando el primer y último carácter visibles.
@@ -91,7 +100,7 @@ func (h *PublicHandler) GetServices(c *gin.Context) {
 }
 
 // FindPatientByDocument maneja GET /api/v1/public/patients/document/:document_number
-// Retorna datos enmascarados para confirmar identidad sin exponer PII completa (ISO 27001 A.8.11).
+// Retorna datos enmascarados (ISO 27001 A.8.11) e indica si ya tiene consentimiento Ley 1581.
 func (h *PublicHandler) FindPatientByDocument(c *gin.Context) {
 	documentNumber := c.Param("document_number")
 
@@ -101,12 +110,23 @@ func (h *PublicHandler) FindPatientByDocument(c *gin.Context) {
 		return
 	}
 
+	// Verificar si ya tiene consentimiento previo registrado
+	hasConsent := false
+	var consentDate *string
+	if consent, err := h.consentRepo.FindByDocument(documentNumber); err == nil && consent != nil {
+		hasConsent = true
+		formatted := consent.AceptadoAt.Format("02/01/2006")
+		consentDate = &formatted
+	}
+
 	c.JSON(http.StatusOK, maskedPatientResponse{
-		FirstName: maskName(patient.FirstName),
-		LastName:  maskName(patient.LastName),
-		Phone:     maskPhone(patient.Phone),
-		Email:     maskEmail(patient.Email),
-		Exists:    true,
+		FirstName:   maskName(patient.FirstName),
+		LastName:    maskName(patient.LastName),
+		Phone:       maskPhone(patient.Phone),
+		Email:       maskEmail(patient.Email),
+		Exists:      true,
+		HasConsent:  hasConsent,
+		ConsentDate: consentDate,
 	})
 }
 

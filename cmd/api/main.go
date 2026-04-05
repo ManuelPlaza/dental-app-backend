@@ -87,8 +87,11 @@ func main() {
 	// --- MÓDULO 5: ESPECIALISTAS (declarado aquí por dependencia en citas) ---
 	specialistRepo := repository.NewGormSpecialistRepo(db)
 
+	// --- MÓDULO CONSENTIMIENTOS LEY 1581 ---
+	consentRepo := repository.NewGormDataConsentRepo(db)
+
 	// --- MÓDULO CITAS ---
-	appointSrv := services.NewAppointmentService(appointRepo, patientRepo, serviceRepo, specialistRepo, notificationSrv)
+	appointSrv := services.NewAppointmentService(appointRepo, patientRepo, serviceRepo, specialistRepo, notificationSrv, consentRepo)
 	appointHdl := handler.NewAppointmentHandler(appointSrv)
 
 	// --- MÓDULO 3: PAGOS (Caja) ---
@@ -122,7 +125,7 @@ func main() {
 	paymentLinkHdl := handler.NewPaymentLinkHandler(paymentLinkSrv)
 
 	// --- MÓDULO PÚBLICO (landing page, sin auth) ---
-	publicHdl := handler.NewPublicHandler(serviceSrv, patientSrv, appointSrv)
+	publicHdl := handler.NewPublicHandler(serviceSrv, patientSrv, appointSrv, consentRepo)
 
 	notifWorker := worker.NewNotificationWorker(notificationSrv)
 	notifWorker.Start()

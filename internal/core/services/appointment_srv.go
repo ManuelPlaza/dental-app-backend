@@ -19,6 +19,7 @@ type appointmentService struct {
 	serviceRepo     ports.ServiceRepository
 	specialistRepo  ports.SpecialistRepository
 	notificationSrv ports.NotificationService
+	consentRepo     ports.DataConsentRepository
 }
 
 // 2. CONSTRUCTOR
@@ -28,6 +29,7 @@ func NewAppointmentService(
 	serviceRepo ports.ServiceRepository,
 	specialistRepo ports.SpecialistRepository,
 	notificationSrv ports.NotificationService,
+	consentRepo ports.DataConsentRepository,
 ) ports.AppointmentService {
 	return &appointmentService{
 		repo:            repo,
@@ -35,6 +37,7 @@ func NewAppointmentService(
 		serviceRepo:     serviceRepo,
 		specialistRepo:  specialistRepo,
 		notificationSrv: notificationSrv,
+		consentRepo:     consentRepo,
 	}
 }
 
@@ -154,20 +157,28 @@ func (s *appointmentService) Schedule(app *domain.Appointment) error {
 //   - specialist_id nunca asignado (admin lo asigna después)
 //   - end_time calculado automáticamente desde duration_minutes del servicio
 func (s *appointmentService) ScheduleFromWeb(req *domain.PublicAppointmentRequest) (*domain.Appointment, error) {
-	// 1. Validar consentimiento Ley 1581 — PRIMERA validación, bloquea todo lo demás
-	if !req.DatosAceptados {
-		return nil, errors.New("debe aceptar el tratamiento de datos personales para continuar (Ley 1581 de 2012)")
-	}
-	if req.DatosAceptadosAt.IsZero() {
-		return nil, errors.New("la fecha de aceptación de datos es requerida")
-	}
-	now := time.Now().UTC()
-	diff := now.Sub(req.DatosAceptadosAt.UTC())
-	if diff < -5*time.Minute {
-		return nil, errors.New("la fecha de aceptación de datos no puede ser futura")
-	}
-	if diff > 30*time.Minute {
-		return nil, errors.New("la sesión de consentimiento ha expirado, por favor recarga el formulario")
+	// 1. Verificar consentimiento Ley 1581 — PRIMERA validación, bloquea todo lo demás.
+	// Si el paciente ya aceptó en una cita anterior, no se le exige volver a aceptar
+	// a menos que la versión de la política haya cambiado.
+	existingConsent, _ := s.consentRepo.FindByDocument(req.DocumentNumber)
+	needsNewConsent := existingConsent == nil
+
+	if needsNewConsent {
+		// Paciente nuevo o sin consentimiento previo: debe aceptar explícitamente
+		if !req.DatosAceptados {
+			return nil, errors.New("debe aceptar el tratamiento de datos personales para continuar (Ley 1581 de 2012)")
+		}
+		if req.DatosAceptadosAt.IsZero() {
+			return nil, errors.New("la fecha de aceptación de datos es requerida")
+		}
+		now := time.Now().UTC()
+		diff := now.Sub(req.DatosAceptadosAt.UTC())
+		if diff < -5*time.Minute {
+			return nil, errors.New("la fecha de aceptación de datos no puede ser futura")
+		}
+		if diff > 30*time.Minute {
+			return nil, errors.New("la sesión de consentimiento ha expirado, por favor recarga el formulario")
+		}
 	}
 
 	// 2. Validar campos básicos
@@ -227,19 +238,28 @@ func (s *appointmentService) ScheduleFromWeb(req *domain.PublicAppointmentReques
 		Notes:           req.Notes,
 	}
 
-	// 7. Construir consentimiento — entidad legal inmutable
-	consent := &domain.DataConsent{
-		DocumentoTitular: req.DocumentNumber,
-		Aceptado:         true,
-		AceptadoAt:       req.DatosAceptadosAt.UTC(),
-		IPAddress:        req.IPAddress,
-		VersionPolitica:  "1.0",
-		UserAgent:        req.UserAgent,
+	// 7. Construir consentimiento solo si es necesario
+	var consent *domain.DataConsent
+	if needsNewConsent {
+		consent = &domain.DataConsent{
+			DocumentoTitular: req.DocumentNumber,
+			Aceptado:         true,
+			AceptadoAt:       req.DatosAceptadosAt.UTC(),
+			IPAddress:        req.IPAddress,
+			VersionPolitica:  "1.0",
+			UserAgent:        req.UserAgent,
+		}
 	}
 
-	// 8. Persistir cita + consentimiento en una sola transacción
-	if err := s.repo.SaveWithConsent(app, consent); err != nil {
-		return nil, err
+	// 8. Persistir cita (+ consentimiento si aplica) en una sola transacción
+	if needsNewConsent {
+		if err := s.repo.SaveWithConsent(app, consent); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := s.repo.Save(app); err != nil {
+			return nil, err
+		}
 	}
 
 	// 9. Notificación de confirmación (async)

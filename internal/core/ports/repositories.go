@@ -92,6 +92,12 @@ type BannerRepository interface {
 	SoftDelete(id uint) error
 }
 
+type DataConsentRepository interface {
+	// FindByDocument retorna el consentimiento más reciente del titular.
+	// Retorna nil, nil si no existe (sin error).
+	FindByDocument(doc string) (*domain.DataConsent, error)
+}
+
 type PaymentLinkRepository interface {
 	Save(link *domain.PaymentLink) error
 	GetByToken(token string) (*domain.PaymentLink, error)
