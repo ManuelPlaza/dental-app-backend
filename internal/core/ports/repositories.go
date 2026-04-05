@@ -17,6 +17,7 @@ type PatientRepository interface {
 // ... (al final del archivo)
 type AppointmentRepository interface {
 	Save(appointment *domain.Appointment) error
+	SaveWithConsent(app *domain.Appointment, consent *domain.DataConsent) error
 	GetByID(id uint) (*domain.Appointment, error)
 	Update(appointment *domain.Appointment) error
 	GetAll() ([]domain.Appointment, error)

@@ -113,12 +113,26 @@ func (h *PublicHandler) FindPatientByDocument(c *gin.Context) {
 // RequestAppointment maneja POST /api/v1/public/appointments
 // Crea una solicitud de cita desde la landing page sin autenticación.
 // Seguridad: status siempre "pending", specialist nunca asignado, end_time calculado automáticamente.
+// Legal: requiere consentimiento explícito Ley 1581 — cita y consentimiento son atómicos.
 func (h *PublicHandler) RequestAppointment(c *gin.Context) {
 	var req domain.PublicAppointmentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos incompletos: " + err.Error()})
 		return
 	}
+
+	// Capturar IP real (detrás de proxy/Railway) y User-Agent para registro de consentimiento
+	ip := c.GetHeader("X-Forwarded-For")
+	if ip == "" {
+		ip = c.ClientIP()
+	} else {
+		// X-Forwarded-For puede tener múltiples IPs separadas por coma — tomar la primera (origen real)
+		if idx := strings.Index(ip, ","); idx != -1 {
+			ip = strings.TrimSpace(ip[:idx])
+		}
+	}
+	req.IPAddress = ip
+	req.UserAgent = c.GetHeader("User-Agent")
 
 	app, err := h.appointmentSvc.ScheduleFromWeb(&req)
 	if err != nil {

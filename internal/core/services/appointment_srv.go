@@ -154,7 +154,23 @@ func (s *appointmentService) Schedule(app *domain.Appointment) error {
 //   - specialist_id nunca asignado (admin lo asigna después)
 //   - end_time calculado automáticamente desde duration_minutes del servicio
 func (s *appointmentService) ScheduleFromWeb(req *domain.PublicAppointmentRequest) (*domain.Appointment, error) {
-	// 1. Validar campos básicos
+	// 1. Validar consentimiento Ley 1581 — PRIMERA validación, bloquea todo lo demás
+	if !req.DatosAceptados {
+		return nil, errors.New("debe aceptar el tratamiento de datos personales para continuar (Ley 1581 de 2012)")
+	}
+	if req.DatosAceptadosAt.IsZero() {
+		return nil, errors.New("la fecha de aceptación de datos es requerida")
+	}
+	now := time.Now().UTC()
+	diff := now.Sub(req.DatosAceptadosAt.UTC())
+	if diff < -5*time.Minute {
+		return nil, errors.New("la fecha de aceptación de datos no puede ser futura")
+	}
+	if diff > 30*time.Minute {
+		return nil, errors.New("la sesión de consentimiento ha expirado, por favor recarga el formulario")
+	}
+
+	// 2. Validar campos básicos
 	if len(req.DocumentNumber) < 5 {
 		return nil, errors.New("número de documento inválido")
 	}
@@ -211,11 +227,22 @@ func (s *appointmentService) ScheduleFromWeb(req *domain.PublicAppointmentReques
 		Notes:           req.Notes,
 	}
 
-	if err := s.repo.Save(app); err != nil {
+	// 7. Construir consentimiento — entidad legal inmutable
+	consent := &domain.DataConsent{
+		DocumentoTitular: req.DocumentNumber,
+		Aceptado:         true,
+		AceptadoAt:       req.DatosAceptadosAt.UTC(),
+		IPAddress:        req.IPAddress,
+		VersionPolitica:  "1.0",
+		UserAgent:        req.UserAgent,
+	}
+
+	// 8. Persistir cita + consentimiento en una sola transacción
+	if err := s.repo.SaveWithConsent(app, consent); err != nil {
 		return nil, err
 	}
 
-	// 6. Notificación de confirmación (async)
+	// 9. Notificación de confirmación (async)
 	app.Patient = *patient
 	go func() {
 		if err := s.notificationSrv.ScheduleConfirmation(app); err != nil {

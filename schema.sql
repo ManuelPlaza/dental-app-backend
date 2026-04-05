@@ -221,3 +221,27 @@ CREATE INDEX IF NOT EXISTS idx_payment_links_nequi_txn   ON "PaymentLinks"(nequi
 ALTER TABLE "PaymentLinks"
     ADD CONSTRAINT fk_payment_links_appointment
     FOREIGN KEY (appointment_id) REFERENCES "Appointments"(id);
+
+-- =====================================================================
+-- MIGRACIÓN: Consentimiento Ley 1581 de 2012 (Colombia)
+-- Tabla inmutable — nunca permitir UPDATE ni DELETE por endpoints públicos
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS "DataConsents" (
+    id                BIGSERIAL PRIMARY KEY,
+    appointment_id    INTEGER NOT NULL UNIQUE,
+    documento_titular VARCHAR(20) NOT NULL,
+    aceptado          BOOLEAN NOT NULL DEFAULT FALSE,
+    aceptado_at       TIMESTAMPTZ NOT NULL,   -- timestamp del cliente (frontend)
+    registrado_at     TIMESTAMPTZ NOT NULL,   -- timestamp del servidor (UTC)
+    ip_address        VARCHAR(45) NOT NULL,
+    version_politica  VARCHAR(20) NOT NULL DEFAULT '1.0',
+    user_agent        TEXT,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_data_consents_appointment ON "DataConsents"(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_data_consents_documento ON "DataConsents"(documento_titular);
+
+ALTER TABLE "DataConsents"
+    ADD CONSTRAINT fk_data_consents_appointment
+    FOREIGN KEY (appointment_id) REFERENCES "Appointments"(id) ON DELETE CASCADE;

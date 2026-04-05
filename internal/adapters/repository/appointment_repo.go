@@ -20,6 +20,19 @@ func (r *gormAppointmentRepo) Save(app *domain.Appointment) error {
 	return r.db.Table("\"Appointments\"").Omit("Patient", "Specialist").Create(app).Error
 }
 
+// SaveWithConsent crea la cita y el consentimiento Ley 1581 en una sola transacción.
+// Si cualquiera de los dos falla, ninguno se persiste.
+func (r *gormAppointmentRepo) SaveWithConsent(app *domain.Appointment, consent *domain.DataConsent) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table(`"Appointments"`).Omit("Patient", "Specialist").Create(app).Error; err != nil {
+			return err
+		}
+		consent.AppointmentID = app.ID
+		consent.RegistradoAt = time.Now().UTC()
+		return tx.Table(`"DataConsents"`).Create(consent).Error
+	})
+}
+
 // GetByID busca una cita por su llave primaria
 func (r *gormAppointmentRepo) GetByID(id uint) (*domain.Appointment, error) {
 	var app domain.Appointment
@@ -32,10 +45,13 @@ func (r *gormAppointmentRepo) Update(app *domain.Appointment) error {
 	return r.db.Table("\"Appointments\"").Save(app).Error
 }
 
-// GetAll trae todas las citas CON los datos del paciente
+// GetAll trae todas las citas CON los datos del paciente y consentimiento (auditoría)
 func (r *gormAppointmentRepo) GetAll() ([]domain.Appointment, error) {
 	var apps []domain.Appointment
-	err := r.db.Table("\"Appointments\"").Preload("Patient").Find(&apps).Error
+	err := r.db.Table("\"Appointments\"").
+		Preload("Patient").
+		Preload("DataConsent").
+		Find(&apps).Error
 	return apps, err
 }
 
@@ -58,6 +74,7 @@ func (r *gormAppointmentRepo) GetPaginated(page, limit int, status string) ([]do
 	// Traer solo los de esta página
 	err := query.
 		Preload("Patient").
+		Preload("DataConsent").
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).

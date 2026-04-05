@@ -89,23 +89,24 @@ func (bt BogotaTime) Value() (driver.Value, error) {
 }
 
 type Appointment struct {
-	ID                 uint       `json:"id"`
-	PatientID          uint       `json:"patient_id"`
-	Patient            Patient    `json:"patient" gorm:"foreignKey:PatientID"`
-	SpecialistID       uint       `json:"specialist_id"`
-	Specialist         Specialist `json:"specialist" gorm:"foreignKey:SpecialistID"`
-	ServiceID          uint       `json:"service_id"`
-	Service            Service    `json:"service" gorm:"foreignKey:ServiceID"`
-	StartTime          BogotaTime `json:"start_time"`
-	EndTime            BogotaTime `json:"end_time"`
-	Status             string     `json:"status"`
-	HistoricalPrice    float64    `json:"historical_price"`
-	ModificationCount  int        `json:"modification_count"`
-	Notes              string     `json:"notes"`
-	CancellationReason string     `json:"cancellation_reason"`
-	CancellationNotes  string     `json:"cancellation_notes"`
-	CreatedAt          time.Time  `json:"created_at"`
-	UpdatedAt          time.Time  `json:"updated_at"`
+	ID                 uint         `json:"id"`
+	PatientID          uint         `json:"patient_id"`
+	Patient            Patient      `json:"patient" gorm:"foreignKey:PatientID"`
+	SpecialistID       uint         `json:"specialist_id"`
+	Specialist         Specialist   `json:"specialist" gorm:"foreignKey:SpecialistID"`
+	ServiceID          uint         `json:"service_id"`
+	Service            Service      `json:"service" gorm:"foreignKey:ServiceID"`
+	StartTime          BogotaTime   `json:"start_time"`
+	EndTime            BogotaTime   `json:"end_time"`
+	Status             string       `json:"status"`
+	HistoricalPrice    float64      `json:"historical_price"`
+	ModificationCount  int          `json:"modification_count"`
+	Notes              string       `json:"notes"`
+	CancellationReason string       `json:"cancellation_reason"`
+	CancellationNotes  string       `json:"cancellation_notes"`
+	DataConsent        *DataConsent `json:"data_consent,omitempty" gorm:"foreignKey:AppointmentID"`
+	CreatedAt          time.Time    `json:"created_at"`
+	UpdatedAt          time.Time    `json:"updated_at"`
 }
 
 func (Appointment) TableName() string {
@@ -126,6 +127,12 @@ type PublicAppointmentRequest struct {
 	ServiceID uint       `json:"service_id" binding:"required"`
 	StartTime BogotaTime `json:"start_time"  binding:"required"`
 	Notes     string     `json:"notes"`
+	// Consentimiento Ley 1581 — obligatorio
+	DatosAceptados   bool      `json:"datos_aceptados"`
+	DatosAceptadosAt time.Time `json:"datos_aceptados_at"`
+	// Metadatos HTTP — NO vienen del JSON, los inyecta el handler
+	IPAddress string `json:"-"`
+	UserAgent string `json:"-"`
 }
 
 type AdminUpdateRequest struct {
