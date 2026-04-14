@@ -3,8 +3,9 @@ package handler
 import (
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
+	"math"
 	"net/http"
-	"strconv" // <--- ¡AQUÍ ESTÁ LO QUE FALTABA!
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -55,22 +56,34 @@ func (h *PaymentHandler) GetBalance(c *gin.Context) {
 		return
 	}
 
+	// pending_balance nunca negativo (por si total_paid > total_cost por error de datos)
+	pendingBalance := math.Max(0, pending)
+
 	c.JSON(http.StatusOK, gin.H{
 		"appointment_id":  appID,
 		"total_cost":      total,
 		"total_paid":      paid,
-		"pending_balance": pending,
-		"status":          getPaymentStatus(paid, pending),
+		"pending_balance": pendingBalance,
+		"status":          getPaymentStatus(total, paid, pendingBalance),
 	})
 }
 
-func getPaymentStatus(paid, pending float64) string {
+// getPaymentStatus deriva el estado del pago exclusivamente de los montos calculados.
+// Nunca lee campos de estado de la BD para evitar desincronización.
+func getPaymentStatus(total, paid, pending float64) string {
+	// Sin precio definido aún — no se puede determinar si está pagado
+	if total <= 0 {
+		return "pendiente"
+	}
+	// Saldo cero o negativo (sobrepago por redondeo) → completamente pagado
 	if pending <= 0 {
 		return "pagado"
 	}
+	// Tiene saldo pero no se ha abonado nada
 	if paid == 0 {
 		return "pendiente"
 	}
+	// Pago parcial
 	return "parcial"
 }
 
