@@ -105,6 +105,7 @@ type PaymentLinkService interface {
 
 type ChatService interface {
 	Chat(messages []domain.ChatMessage) (string, error)
+	InvalidateCache()
 }
 
 // NequiWebhookPayload estructura del callback de Nequi.

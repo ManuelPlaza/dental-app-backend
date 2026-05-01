@@ -188,11 +188,11 @@ ALTER TABLE "Payments" ADD COLUMN  status VARCHAR(50) DEFAULT 'completed'; -- co
 ALTER TABLE "MedicalHistory" ADD CONSTRAINT "medical_patient_fk" FOREIGN KEY ("patient_id") REFERENCES "Patient"("id");
 ALTER TABLE "MedicalHistory" ADD CONSTRAINT "medical_appointment_fk" FOREIGN KEY ("appointment_id") REFERENCES "Appointments"("id");
 ALTER TABLE "MedicalHistory" ADD COLUMN next_appointment_date TIMESTAMP;
-
+--
 ALTER TABLE "LoyaltyTransactions" ADD CONSTRAINT "loyalty_patient_fk" FOREIGN KEY ("patient_id") REFERENCES "Patient"("id");
 ALTER TABLE "LoyaltyTransactions" ADD CONSTRAINT "loyalty_appointment_fk" FOREIGN KEY ("appointment_id") REFERENCES "Appointments"("id");
 
--- =====================================================================
+ =====================================================================
 -- MIGRACIÓN: Links de Pago Nequi
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS "PaymentLinks" (
@@ -245,3 +245,17 @@ CREATE INDEX IF NOT EXISTS idx_data_consents_documento ON "DataConsents"(documen
 ALTER TABLE "DataConsents"
     ADD CONSTRAINT fk_data_consents_appointment
     FOREIGN KEY (appointment_id) REFERENCES "Appointments"(id) ON DELETE CASCADE;
+-- =====================================================================
+-- ChatConfig: configuración del chatbot IA (fila única, id=1)
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS "ChatConfig" (
+    id             INTEGER PRIMARY KEY DEFAULT 1,
+    whatsapp       VARCHAR(30),
+    address        TEXT,
+    business_hours TEXT,
+    policy_url     VARCHAR(500),
+    contact_email  VARCHAR(255),
+    extra_info     TEXT,
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT single_row CHECK (id = 1)
+);

@@ -98,6 +98,13 @@ type DataConsentRepository interface {
 	FindByDocument(doc string) (*domain.DataConsent, error)
 }
 
+type ChatConfigRepository interface {
+	// Get retorna la configuración del chatbot. Retorna nil, nil si no existe aún.
+	Get() (*domain.ChatConfig, error)
+	// Save crea o actualiza (upsert por id=1).
+	Save(config *domain.ChatConfig) error
+}
+
 type PaymentLinkRepository interface {
 	Save(link *domain.PaymentLink) error
 	GetByToken(token string) (*domain.PaymentLink, error)

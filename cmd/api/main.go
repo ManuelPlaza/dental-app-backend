@@ -127,8 +127,10 @@ func main() {
 
 	// --- MÓDULO CHATBOT IA ---
 	groqClient := groq.NewClient()
-	chatSrv := services.NewChatService(serviceRepo, groqClient)
+	chatConfigRepo := repository.NewGormChatConfigRepo(db)
+	chatSrv := services.NewChatService(serviceRepo, chatConfigRepo, groqClient)
 	chatHdl := handler.NewChatHandler(chatSrv)
+	chatConfigHdl := handler.NewChatConfigHandler(chatConfigRepo, chatSrv)
 
 	// --- MÓDULO PÚBLICO (landing page, sin auth) ---
 	publicHdl := handler.NewPublicHandler(serviceSrv, patientSrv, appointSrv, consentRepo)
@@ -252,12 +254,16 @@ func main() {
 		v1.GET("/appointments/:id/payment-links", paymentLinkHdl.GetByAppointment)
 		v1.DELETE("/payment-links/:token", paymentLinkHdl.Cancel)
 
-		v1.GET("/services", serviceHdl.GetAll)                      // Admin (con auth, mismo handler)
-		v1.GET("/admin/services", serviceHdl.GetAllAdmin)           // Admin (todos)
-		v1.POST("/services", serviceHdl.Create)                     // <--- NUEVO
-		v1.PUT("/services/:id", serviceHdl.Update)                  // <--- NUEVO
-		v1.PATCH("/services/:id/activate", serviceHdl.Activate)     // <--- NUEVO
-		v1.PATCH("/services/:id/inactivate", serviceHdl.Inactivate) // <--- NUEVO
+		v1.GET("/services", serviceHdl.GetAll)
+		v1.GET("/admin/services", serviceHdl.GetAllAdmin)
+		v1.POST("/services", serviceHdl.Create)
+		v1.PUT("/services/:id", serviceHdl.Update)
+		v1.PATCH("/services/:id/activate", serviceHdl.Activate)
+		v1.PATCH("/services/:id/inactivate", serviceHdl.Inactivate)
+
+		// Configuración del Chatbot IA
+		v1.GET("/admin/chat-config", chatConfigHdl.Get)
+		v1.PUT("/admin/chat-config", chatConfigHdl.Save)
 	}
 
 	// 5. Correr Servidor
