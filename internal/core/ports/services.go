@@ -103,6 +103,10 @@ type PaymentLinkService interface {
 	ExpireStale() error
 }
 
+type ChatService interface {
+	Chat(messages []domain.ChatMessage) (string, error)
+}
+
 // NequiWebhookPayload estructura del callback de Nequi.
 type NequiWebhookPayload struct {
 	TransactionID string  `json:"transactionId"`

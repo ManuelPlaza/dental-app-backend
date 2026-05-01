@@ -9,6 +9,7 @@ import (
 
 	"dental-app/internal/adapters/handler"
 	"dental-app/internal/adapters/middleware"
+	"dental-app/internal/adapters/groq"
 	"dental-app/internal/adapters/nequi"
 	"dental-app/internal/adapters/repository"
 	"dental-app/internal/adapters/sse"
@@ -124,6 +125,11 @@ func main() {
 	paymentLinkSrv := services.NewPaymentLinkService(paymentLinkRepo, payRepo, appointRepo, nequiClient)
 	paymentLinkHdl := handler.NewPaymentLinkHandler(paymentLinkSrv)
 
+	// --- MÓDULO CHATBOT IA ---
+	groqClient := groq.NewClient()
+	chatSrv := services.NewChatService(serviceRepo, groqClient)
+	chatHdl := handler.NewChatHandler(chatSrv)
+
 	// --- MÓDULO PÚBLICO (landing page, sin auth) ---
 	publicHdl := handler.NewPublicHandler(serviceSrv, patientSrv, appointSrv, consentRepo)
 
@@ -181,6 +187,10 @@ func main() {
 	payRateLimit := middleware.RateLimitMiddleware(10, 1*time.Minute)
 	r.GET("/api/v1/pay/:token", payRateLimit, paymentLinkHdl.GetStatus)
 	r.POST("/api/v1/webhooks/nequi", paymentLinkHdl.HandleNequiWebhook)
+
+	// Chatbot IA — rate limited (20 req/min por IP)
+	chatRateLimit := middleware.RateLimitMiddleware(20, 1*time.Minute)
+	r.POST("/api/v1/public/chat", chatRateLimit, chatHdl.Chat)
 
 	// --- RUTAS PROTEGIDAS (con JWT) ---
 	v1 := r.Group("/api/v1")
