@@ -39,6 +39,7 @@ services:
       GROQ_MODEL: ${GROQ_MODEL}
       GROQ_BASE_URL: ${GROQ_BASE_URL}
       CLINIC_NAME: ${CLINIC_NAME}
+      BUSINESS_TYPE: ${BUSINESS_TYPE}
     depends_on:
       db:
         condition: service_healthy
