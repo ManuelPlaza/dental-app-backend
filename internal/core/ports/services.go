@@ -24,6 +24,9 @@ type AppointmentService interface {
 	GetSummary() (map[string]int64, error)
 	AdminUpdate(id uint, req domain.AdminUpdateRequest) error
 	AutoCancelExpired() (int64, error) // lee APPOINTMENT_CONFIRM_HOURS del env
+	// GetAvailableSlots retorna los slots libres para un servicio en una fecha.
+	// date: "2026-05-04", serviceID: ID del servicio.
+	GetAvailableSlots(date string, serviceID uint) (*domain.AvailableSlots, error)
 }
 
 // ... (interfaces anteriores)

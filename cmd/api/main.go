@@ -182,6 +182,7 @@ func main() {
 	r.GET("/api/v1/public/services", publicHdl.GetServices)
 	r.GET("/api/v1/public/patients/document/:document_number", publicHdl.FindPatientByDocument)
 	r.POST("/api/v1/public/appointments", publicHdl.RequestAppointment)
+	r.GET("/api/v1/public/available-slots", publicHdl.GetAvailableSlots)
 	r.GET("/api/v1/public/banners", bannerHdl.GetActive)
 	r.GET("/api/v1/public/banners/events", bannerHdl.StreamEvents)
 

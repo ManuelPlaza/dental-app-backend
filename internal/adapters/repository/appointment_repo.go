@@ -128,6 +128,44 @@ func (r *gormAppointmentRepo) HasSpecialistConflict(specialistID uint, start, en
 	return count > 0, err
 }
 
+// GetOccupiedRanges retorna los rangos [start, end] de citas activas del especialista
+// en la fecha indicada, para calcular slots disponibles en memoria.
+// Los tiempos se reinterpretan en zona Bogotá (igual que BogotaTime.Scan).
+func (r *gormAppointmentRepo) GetOccupiedRanges(specialistID uint, date time.Time) ([][2]time.Time, error) {
+	bogotaLoc, _ := time.LoadLocation("America/Bogota")
+
+	type row struct {
+		StartTime time.Time `gorm:"column:start_time"`
+		EndTime   time.Time `gorm:"column:end_time"`
+	}
+
+	dateStr := date.Format("2006-01-02")
+	var rows []row
+
+	// La DB almacena TIMESTAMP sin zona en hora Bogotá — usar DATE() directo.
+	err := r.db.Table(`"Appointments"`).
+		Select("start_time, end_time").
+		Where("specialist_id = ?", specialistID).
+		Where("status IN ?", []string{"pending", "scheduled"}).
+		Where("DATE(start_time) = ?", dateStr).
+		Find(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([][2]time.Time, len(rows))
+	for i, rw := range rows {
+		// Reinterpretar como hora Bogotá (el valor numérico es correcto, la zona no)
+		st := rw.StartTime
+		et := rw.EndTime
+		result[i] = [2]time.Time{
+			time.Date(st.Year(), st.Month(), st.Day(), st.Hour(), st.Minute(), st.Second(), 0, bogotaLoc),
+			time.Date(et.Year(), et.Month(), et.Day(), et.Hour(), et.Minute(), et.Second(), 0, bogotaLoc),
+		}
+	}
+	return result, nil
+}
+
 // GetToday trae todas las citas cuya fecha de inicio es hoy
 func (r *gormAppointmentRepo) GetToday() ([]domain.Appointment, error) {
 	var apps []domain.Appointment

@@ -135,6 +135,14 @@ type PublicAppointmentRequest struct {
 	UserAgent string `json:"-"`
 }
 
+// AvailableSlots es la respuesta del endpoint público de slots disponibles.
+type AvailableSlots struct {
+	Date            string   `json:"date"`             // "2026-05-04"
+	ServiceID       uint     `json:"service_id"`
+	DurationMinutes int      `json:"duration_minutes"`
+	Slots           []string `json:"slots"`            // ["08:00","08:30",...]
+}
+
 type AdminUpdateRequest struct {
 	Status             string      `json:"status"`
 	SpecialistID       *uint       `json:"specialist_id"`

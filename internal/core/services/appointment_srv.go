@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -226,7 +227,16 @@ func (s *appointmentService) ScheduleFromWeb(req *domain.PublicAppointmentReques
 		return nil, errors.New("no hay un especialista principal configurado; contacta al administrador")
 	}
 
-	// 6. Construir la cita — status y specialist SIEMPRE forzados internamente
+	// 6. Verificar disponibilidad del especialista principal (Opción A — safety net)
+	conflict, err := s.repo.HasSpecialistConflict(defaultSpecialist.ID, startBogota, endBogota, 0)
+	if err != nil {
+		return nil, errors.New("error verificando disponibilidad")
+	}
+	if conflict {
+		return nil, errors.New("el horario seleccionado ya está ocupado. Por favor elige otro horario disponible")
+	}
+
+	// 7. Construir la cita — status y specialist SIEMPRE forzados internamente
 	app := &domain.Appointment{
 		PatientID:       patient.ID,
 		ServiceID:       req.ServiceID,
@@ -457,4 +467,105 @@ func (s *appointmentService) AutoCancelExpired() (int64, error) {
 		}
 	}
 	return s.repo.AutoCancelExpired(confirmHours)
+}
+
+// GetAvailableSlots (Opción B) — retorna los horarios libres para un servicio en una fecha.
+// Considera citas pending+scheduled del especialista principal como bloqueadas.
+func (s *appointmentService) GetAvailableSlots(dateStr string, serviceID uint) (*domain.AvailableSlots, error) {
+	// Validar y parsear fecha
+	dateStr = strings.TrimSpace(dateStr)
+	date, err := time.ParseInLocation("2006-01-02", dateStr, bogotaLoc)
+	if err != nil {
+		return nil, errors.New("fecha inválida, usa formato YYYY-MM-DD")
+	}
+
+	// No mostrar slots para fechas pasadas
+	today := time.Now().In(bogotaLoc)
+	todayDate := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, bogotaLoc)
+	if date.Before(todayDate) {
+		return &domain.AvailableSlots{Date: dateStr, ServiceID: serviceID, Slots: []string{}}, nil
+	}
+
+	// Domingo → cerrado
+	if date.Weekday() == time.Sunday {
+		return &domain.AvailableSlots{Date: dateStr, ServiceID: serviceID, Slots: []string{}}, nil
+	}
+
+	// Obtener servicio
+	svc, err := s.serviceRepo.GetByID(serviceID)
+	if err != nil {
+		return nil, errors.New("servicio no encontrado")
+	}
+	svcDuration := time.Duration(svc.DurationMinutes) * time.Minute
+
+	// Obtener especialista principal
+	specialist, err := s.specialistRepo.GetDefault()
+	if err != nil {
+		return nil, errors.New("no hay especialista principal configurado")
+	}
+
+	// Obtener rangos ocupados para ese día
+	occupied, err := s.repo.GetOccupiedRanges(specialist.ID, date)
+	if err != nil {
+		return nil, errors.New("error consultando disponibilidad")
+	}
+
+	// Calcular inicio y fin del día laboral en Bogotá
+	y, m, d := date.Date()
+	var dayStart, dayEnd time.Time
+	if date.Weekday() == time.Saturday {
+		dayStart = time.Date(y, m, d, 8, 0, 0, 0, bogotaLoc)
+		dayEnd = time.Date(y, m, d, 12, 0, 0, 0, bogotaLoc)
+	} else {
+		dayStart = time.Date(y, m, d, 8, 0, 0, 0, bogotaLoc)
+		dayEnd = time.Date(y, m, d, 18, 0, 0, 0, bogotaLoc)
+	}
+
+	// Intervalo entre slots (configurable, default 30 min)
+	slotInterval := 30
+	if v := os.Getenv("SLOT_INTERVAL_MINUTES"); v != "" {
+		if n, err2 := strconv.Atoi(v); err2 == nil && n > 0 {
+			slotInterval = n
+		}
+	}
+	step := time.Duration(slotInterval) * time.Minute
+
+	// Buffer mínimo desde ahora para el día de hoy (30 min)
+	minStart := time.Now().In(bogotaLoc).Add(30 * time.Minute)
+
+	var slots []string
+	for slot := dayStart; !slot.Add(svcDuration).After(dayEnd); slot = slot.Add(step) {
+		// Filtrar slots en el pasado (para hoy)
+		if date.Equal(todayDate) && slot.Before(minStart) {
+			continue
+		}
+
+		slotEnd := slot.Add(svcDuration)
+
+		// Verificar solapamiento con citas existentes
+		available := true
+		for _, occ := range occupied {
+			// Solapamiento: slot empieza antes de que termine la ocupada
+			// Y termina después de que empieza la ocupada
+			if slot.Before(occ[1]) && slotEnd.After(occ[0]) {
+				available = false
+				break
+			}
+		}
+
+		if available {
+			slots = append(slots, slot.Format("15:04"))
+		}
+	}
+
+	if slots == nil {
+		slots = []string{}
+	}
+
+	return &domain.AvailableSlots{
+		Date:            dateStr,
+		ServiceID:       serviceID,
+		DurationMinutes: svc.DurationMinutes,
+		Slots:           slots,
+	}, nil
 }

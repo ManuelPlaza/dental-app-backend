@@ -4,6 +4,7 @@ import (
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
 	"net/http"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -167,4 +168,29 @@ func (h *PublicHandler) RequestAppointment(c *gin.Context) {
 		"end_time":       app.EndTime,
 		"status":         app.Status,
 	})
+}
+
+// GetAvailableSlots retorna los horarios libres para un servicio en una fecha.
+// GET /api/v1/public/available-slots?date=2026-05-04&service_id=1
+func (h *PublicHandler) GetAvailableSlots(c *gin.Context) {
+	dateStr := strings.TrimSpace(c.Query("date"))
+	if dateStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "parámetro 'date' requerido (YYYY-MM-DD)"})
+		return
+	}
+
+	serviceIDStr := c.Query("service_id")
+	serviceID64, err := strconv.ParseUint(serviceIDStr, 10, 32)
+	if err != nil || serviceID64 == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "parámetro 'service_id' requerido"})
+		return
+	}
+
+	result, err := h.appointmentSvc.GetAvailableSlots(dateStr, uint(serviceID64))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }

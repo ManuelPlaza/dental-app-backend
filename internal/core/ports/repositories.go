@@ -28,6 +28,9 @@ type AppointmentRepository interface {
 	GetMonthlyCancellations() ([]map[string]interface{}, error)
 	GetTopPatients(limit int) ([]map[string]interface{}, error)
 	AutoCancelExpired(confirmHours int) (int64, error) // cancela pending cuyo límite de confirmación venció
+	// GetOccupiedRanges retorna los rangos [start, end] de citas pending/scheduled
+	// del especialista en la fecha indicada (hora Bogotá).
+	GetOccupiedRanges(specialistID uint, date time.Time) ([][2]time.Time, error)
 }
 
 // ... (interfaces anteriores)
