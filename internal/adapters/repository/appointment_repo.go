@@ -36,7 +36,12 @@ func (r *gormAppointmentRepo) SaveWithConsent(app *domain.Appointment, consent *
 // GetByID busca una cita por su llave primaria
 func (r *gormAppointmentRepo) GetByID(id uint) (*domain.Appointment, error) {
 	var app domain.Appointment
-	err := r.db.Table("\"Appointments\"").First(&app, id).Error
+	err := r.db.Table("\"Appointments\"").
+		Preload("Patient").
+		Preload("Service").
+		Preload("Specialist").
+		Preload("DataConsent").
+		First(&app, id).Error
 	return &app, err
 }
 
@@ -45,11 +50,13 @@ func (r *gormAppointmentRepo) Update(app *domain.Appointment) error {
 	return r.db.Table("\"Appointments\"").Save(app).Error
 }
 
-// GetAll trae todas las citas CON los datos del paciente y consentimiento (auditoría)
+// GetAll trae todas las citas CON los datos del paciente, servicio y consentimiento
 func (r *gormAppointmentRepo) GetAll() ([]domain.Appointment, error) {
 	var apps []domain.Appointment
 	err := r.db.Table("\"Appointments\"").
 		Preload("Patient").
+		Preload("Service").
+		Preload("Specialist").
 		Preload("DataConsent").
 		Find(&apps).Error
 	return apps, err
@@ -74,6 +81,8 @@ func (r *gormAppointmentRepo) GetPaginated(page, limit int, status string) ([]do
 	// Traer solo los de esta página
 	err := query.
 		Preload("Patient").
+		Preload("Service").
+		Preload("Specialist").
 		Preload("DataConsent").
 		Order("created_at DESC").
 		Limit(limit).
