@@ -104,6 +104,7 @@ type Appointment struct {
 	Notes              string       `json:"notes"`
 	CancellationReason string       `json:"cancellation_reason"`
 	CancellationNotes  string       `json:"cancellation_notes"`
+	Fbclid             string       `json:"fbclid,omitempty" gorm:"column:fbclid"`
 	DataConsent        *DataConsent `json:"data_consent,omitempty" gorm:"foreignKey:AppointmentID"`
 	CreatedAt          time.Time    `json:"created_at"`
 	UpdatedAt          time.Time    `json:"updated_at"`
@@ -130,6 +131,8 @@ type PublicAppointmentRequest struct {
 	// Consentimiento Ley 1581 — obligatorio
 	DatosAceptados   bool      `json:"datos_aceptados"`
 	DatosAceptadosAt time.Time `json:"datos_aceptados_at"`
+	// Meta Ads tracking
+	Fbclid string `json:"fbclid"`
 	// Metadatos HTTP — NO vienen del JSON, los inyecta el handler
 	IPAddress string `json:"-"`
 	UserAgent string `json:"-"`

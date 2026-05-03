@@ -259,3 +259,5 @@ CREATE TABLE IF NOT EXISTS "ChatConfig" (
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT single_row CHECK (id = 1)
 );
+
+ALTER TABLE "Appointments" ADD COLUMN IF NOT EXISTS fbclid TEXT NOT NULL DEFAULT '';

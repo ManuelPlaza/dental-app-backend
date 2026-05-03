@@ -10,6 +10,7 @@ import (
 	"dental-app/internal/adapters/handler"
 	"dental-app/internal/adapters/middleware"
 	"dental-app/internal/adapters/groq"
+	"dental-app/internal/adapters/meta"
 	"dental-app/internal/adapters/nequi"
 	"dental-app/internal/adapters/repository"
 	"dental-app/internal/adapters/sse"
@@ -91,8 +92,11 @@ func main() {
 	// --- MÓDULO CONSENTIMIENTOS LEY 1581 ---
 	consentRepo := repository.NewGormDataConsentRepo(db)
 
+	// --- MÓDULO META CAPI ---
+	metaClient := meta.NewCAPIClient()
+
 	// --- MÓDULO CITAS ---
-	appointSrv := services.NewAppointmentService(appointRepo, patientRepo, serviceRepo, specialistRepo, notificationSrv, consentRepo)
+	appointSrv := services.NewAppointmentService(appointRepo, patientRepo, serviceRepo, specialistRepo, notificationSrv, consentRepo, metaClient)
 	appointHdl := handler.NewAppointmentHandler(appointSrv)
 
 	// --- MÓDULO 3: PAGOS (Caja) ---

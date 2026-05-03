@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
 	"errors"
@@ -21,6 +22,7 @@ type appointmentService struct {
 	specialistRepo  ports.SpecialistRepository
 	notificationSrv ports.NotificationService
 	consentRepo     ports.DataConsentRepository
+	metaClient      ports.MetaCAPIClient
 }
 
 // 2. CONSTRUCTOR
@@ -31,6 +33,7 @@ func NewAppointmentService(
 	specialistRepo ports.SpecialistRepository,
 	notificationSrv ports.NotificationService,
 	consentRepo ports.DataConsentRepository,
+	metaClient ports.MetaCAPIClient,
 ) ports.AppointmentService {
 	return &appointmentService{
 		repo:            repo,
@@ -39,6 +42,7 @@ func NewAppointmentService(
 		specialistRepo:  specialistRepo,
 		notificationSrv: notificationSrv,
 		consentRepo:     consentRepo,
+		metaClient:      metaClient,
 	}
 }
 
@@ -246,6 +250,7 @@ func (s *appointmentService) ScheduleFromWeb(req *domain.PublicAppointmentReques
 		EndTime:         domain.BogotaTime{Time: endBogota},
 		HistoricalPrice: svc.Price,
 		Notes:           req.Notes,
+		Fbclid:          req.Fbclid,
 	}
 
 	// 7. Construir consentimiento solo si es necesario
@@ -277,6 +282,24 @@ func (s *appointmentService) ScheduleFromWeb(req *domain.PublicAppointmentReques
 	go func() {
 		if err := s.notificationSrv.ScheduleConfirmation(app); err != nil {
 			log.Printf("⚠️ Error confirmación cita web %d: %s", app.ID, err.Error())
+		}
+	}()
+
+	// 10. Meta CAPI Lead event (async — no bloquea la respuesta)
+	go func() {
+		landingURL := os.Getenv("LANDING_URL")
+		if landingURL == "" {
+			landingURL = "https://tecnicadentaljc.com"
+		}
+		if err := s.metaClient.SendLeadEvent(context.Background(), ports.MetaLeadEvent{
+			EventTime:      time.Now().Unix(),
+			EventSourceURL: landingURL,
+			Fbclid:         req.Fbclid,
+			Phone:          req.Phone,
+			Email:          req.Email,
+			ExternalID:     req.DocumentNumber,
+		}); err != nil {
+			log.Printf("⚠️ Meta CAPI Lead cita %d: %s", app.ID, err.Error())
 		}
 	}()
 
