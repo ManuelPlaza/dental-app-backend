@@ -2,6 +2,7 @@ package repository
 
 import (
 	"strings"
+	"time"
 
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
@@ -63,4 +64,48 @@ func (r *gormPatientRepo) FindByID(id uint) (*domain.Patient, error) {
 		return nil, err
 	}
 	return &patient, nil
+}
+
+// GetLastContactDate retorna la fecha del último end_time de citas no canceladas del paciente.
+// Retorna nil si no tiene citas activas registradas.
+func (r *gormPatientRepo) GetLastContactDate(id uint) (*time.Time, error) {
+	var result struct{ MaxEnd *time.Time }
+	err := r.db.Table(`"Appointments"`).
+		Select(`MAX(end_time) as max_end`).
+		Where(`patient_id = ? AND status != 'cancelled'`, id).
+		Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result.MaxEnd, nil
+}
+
+// GetExpiringPatients retorna pacientes no anonimizados cuyo último contacto es anterior al cutoff.
+// Usa created_at como fallback cuando el paciente no tiene citas no canceladas.
+func (r *gormPatientRepo) GetExpiringPatients(cutoff time.Time) ([]domain.Patient, error) {
+	var patients []domain.Patient
+	err := r.db.Table(`"Patient" p`).
+		Select(`p.*`).
+		Joins(`LEFT JOIN (
+			SELECT patient_id, MAX(end_time) AS last_appt
+			FROM "Appointments"
+			WHERE status != 'cancelled'
+			GROUP BY patient_id
+		) a ON a.patient_id = p.id`).
+		Where(`p.anonymized_at IS NULL`).
+		Where(`COALESCE(a.last_appt, p.created_at) <= ?`, cutoff).
+		Find(&patients).Error
+	return patients, err
+}
+
+// AnonymizePatient reemplaza los campos PII del paciente con valores neutros.
+func (r *gormPatientRepo) AnonymizePatient(id uint, anonDoc string) error {
+	return r.db.Table(`"Patient"`).Where("id = ?", id).Updates(map[string]interface{}{
+		"first_name":      "[eliminado]",
+		"last_name":       "[eliminado]",
+		"phone":           "[eliminado]",
+		"email":           "[eliminado]",
+		"document_number": anonDoc,
+		"anonymized_at":   time.Now().UTC(),
+	}).Error
 }

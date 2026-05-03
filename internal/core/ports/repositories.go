@@ -10,8 +10,15 @@ type PatientRepository interface {
 	Save(patient *domain.Patient) error
 	GetAll() ([]domain.Patient, error)
 	FindByDocumentNumber(doc string) (*domain.Patient, error)
-	Update(id uint, patient *domain.Patient) error // <--- NUEVO
+	Update(id uint, patient *domain.Patient) error
 	FindByID(id uint) (*domain.Patient, error)
+	// GetLastContactDate retorna la fecha del último contacto (max end_time de citas no canceladas)
+	// o nil si no tiene citas.
+	GetLastContactDate(id uint) (*time.Time, error)
+	// GetExpiringPatients retorna pacientes no anonimizados cuyo último contacto es anterior al cutoff.
+	GetExpiringPatients(cutoff time.Time) ([]domain.Patient, error)
+	// AnonymizePatient reemplaza PII por valores neutrales y registra la fecha de anonimización.
+	AnonymizePatient(id uint, anonDoc string) error
 }
 
 // ... (al final del archivo)
@@ -99,6 +106,8 @@ type DataConsentRepository interface {
 	// FindByDocument retorna el consentimiento más reciente del titular.
 	// Retorna nil, nil si no existe (sin error).
 	FindByDocument(doc string) (*domain.DataConsent, error)
+	// RevokeByDocument elimina todos los registros de consentimiento del titular.
+	RevokeByDocument(doc string) error
 }
 
 type ChatConfigRepository interface {

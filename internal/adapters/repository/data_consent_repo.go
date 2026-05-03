@@ -32,3 +32,10 @@ func (r *gormDataConsentRepo) FindByDocument(doc string) (*domain.DataConsent, e
 	}
 	return &consent, nil
 }
+
+// RevokeByDocument elimina todos los consentimientos del titular (derecho de revocación Ley 1581).
+func (r *gormDataConsentRepo) RevokeByDocument(doc string) error {
+	return r.db.Table(`"DataConsents"`).
+		Where("documento_titular = ?", doc).
+		Delete(nil).Error
+}

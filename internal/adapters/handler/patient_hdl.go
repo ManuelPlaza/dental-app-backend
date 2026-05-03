@@ -89,3 +89,32 @@ func (h *PatientHandler) Update(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Paciente actualizado correctamente"})
 }
+
+// GetConsentStatus maneja GET /admin/patients/:id/consent
+func (h *PatientHandler) GetConsentStatus(c *gin.Context) {
+	id64, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+	status, err := h.service.GetConsentStatus(uint(id64))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, status)
+}
+
+// RevokeConsent maneja DELETE /admin/patients/:id/consent
+func (h *PatientHandler) RevokeConsent(c *gin.Context) {
+	id64, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+	if err := h.service.RevokeConsent(uint(id64)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Consentimiento revocado correctamente"})
+}

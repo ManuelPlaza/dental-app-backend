@@ -10,7 +10,14 @@ type PatientService interface {
 	Create(patient *domain.Patient) error
 	List() ([]domain.Patient, error)
 	FindByDocument(documentNumber string) (*domain.Patient, error)
-	Update(id uint, patient *domain.Patient) error // <--- NUEVO
+	Update(id uint, patient *domain.Patient) error
+	// GetConsentStatus retorna el estado de consentimiento y retención del paciente.
+	GetConsentStatus(patientID uint) (*domain.ConsentStatus, error)
+	// RevokeConsent elimina el consentimiento registrado del paciente.
+	RevokeConsent(patientID uint) error
+	// AnonymizeExpired anonimiza pacientes cuyo periodo de retención (2 años) venció.
+	// Retorna el número de pacientes anonimizados.
+	AnonymizeExpired() (int64, error)
 }
 
 type AppointmentService interface {

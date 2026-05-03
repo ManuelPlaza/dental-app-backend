@@ -63,9 +63,12 @@ func main() {
 	authSrv := services.NewAuthService(userRepo)
 	authHdl := handler.NewAuthHandler(authSrv)
 
+	// --- MÓDULO CONSENTIMIENTOS LEY 1581 (declarado aquí — lo usan pacientes y citas) ---
+	consentRepo := repository.NewGormDataConsentRepo(db)
+
 	// --- MÓDULO 1: PACIENTES ---
 	patientRepo := repository.NewGormPatientRepo(db)
-	patientSrv := services.NewPatientService(patientRepo)
+	patientSrv := services.NewPatientService(patientRepo, consentRepo)
 	patientHdl := handler.NewPatientHandler(patientSrv)
 
 	// --- MÓDULO 6: SERVICIOS ---
@@ -88,9 +91,6 @@ func main() {
 
 	// --- MÓDULO 5: ESPECIALISTAS (declarado aquí por dependencia en citas) ---
 	specialistRepo := repository.NewGormSpecialistRepo(db)
-
-	// --- MÓDULO CONSENTIMIENTOS LEY 1581 ---
-	consentRepo := repository.NewGormDataConsentRepo(db)
 
 	// --- MÓDULO META CAPI ---
 	metaClient := meta.NewCAPIClient()
@@ -147,6 +147,9 @@ func main() {
 
 	appointWorker := worker.NewAppointmentWorker(appointSrv)
 	appointWorker.Start()
+
+	retentionWorker := worker.NewRetentionWorker(patientSrv)
+	retentionWorker.Start()
 
 	// 4. Configurar Router (Gin)
 	// V6: Usar modo release en producción para no exponer debug info
@@ -215,6 +218,8 @@ func main() {
 		v1.GET("/patients", patientHdl.GetAll)
 		v1.GET("/patients/document/:document_number", patientHdl.FindByDocument)
 		v1.PUT("/patients/:id", patientHdl.Update)
+		v1.GET("/admin/patients/:id/consent", patientHdl.GetConsentStatus)
+		v1.DELETE("/admin/patients/:id/consent", patientHdl.RevokeConsent)
 
 		// Rutas Citas
 		v1.POST("/appointments", appointHdl.Create)
