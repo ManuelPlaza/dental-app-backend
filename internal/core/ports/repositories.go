@@ -15,6 +15,8 @@ type PatientRepository interface {
 	// GetLastContactDate retorna la fecha del último contacto (max end_time de citas no canceladas)
 	// o nil si no tiene citas.
 	GetLastContactDate(id uint) (*time.Time, error)
+	// HasActiveAppointments retorna true si el paciente tiene citas pending o scheduled.
+	HasActiveAppointments(id uint) (bool, error)
 	// GetExpiringPatients retorna pacientes no anonimizados cuyo último contacto es anterior al cutoff.
 	GetExpiringPatients(cutoff time.Time) ([]domain.Patient, error)
 	// AnonymizePatient reemplaza PII por valores neutrales y registra la fecha de anonimización.

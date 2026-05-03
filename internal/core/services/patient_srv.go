@@ -80,11 +80,20 @@ func (s *patientService) GetConsentStatus(patientID uint) (*domain.ConsentStatus
 	return status, nil
 }
 
-// RevokeConsent elimina el consentimiento del paciente (Ley 1581 art. 8 lit. a).
+// RevokeConsent elimina el consentimiento del paciente (Ley 1581 art. 8 lit. e).
+// Bloqueado si el paciente tiene citas activas: la cita es una obligación contractual
+// preexistente que autoriza el tratamiento de datos sin consentimiento (art. 10 Ley 1581).
 func (s *patientService) RevokeConsent(patientID uint) error {
 	patient, err := s.repo.FindByID(patientID)
 	if err != nil {
 		return fmt.Errorf("paciente no encontrado")
+	}
+	hasActive, err := s.repo.HasActiveAppointments(patientID)
+	if err != nil {
+		return fmt.Errorf("error verificando citas activas")
+	}
+	if hasActive {
+		return fmt.Errorf("no es posible revocar el consentimiento mientras el paciente tenga citas pendientes o programadas. La cita agendada constituye una obligación contractual que autoriza el tratamiento de datos (Ley 1581 art. 10)")
 	}
 	return s.consentRepo.RevokeByDocument(patient.DocumentNumber)
 }

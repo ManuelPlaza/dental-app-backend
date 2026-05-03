@@ -66,6 +66,15 @@ func (r *gormPatientRepo) FindByID(id uint) (*domain.Patient, error) {
 	return &patient, nil
 }
 
+// HasActiveAppointments retorna true si el paciente tiene citas pending o scheduled.
+func (r *gormPatientRepo) HasActiveAppointments(id uint) (bool, error) {
+	var count int64
+	err := r.db.Table(`"Appointments"`).
+		Where(`patient_id = ? AND status IN ?`, id, []string{"pending", "scheduled"}).
+		Count(&count).Error
+	return count > 0, err
+}
+
 // GetLastContactDate retorna la fecha del último end_time de citas no canceladas del paciente.
 // Retorna nil si no tiene citas activas registradas.
 func (r *gormPatientRepo) GetLastContactDate(id uint) (*time.Time, error) {
