@@ -1,0 +1,441 @@
+<mxfile>
+  <diagram name="Técnica Dental JC — Arquitectura">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- TÍTULO -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <mxCell id="title" value="Técnica Dental JC — Arquitectura de Sistema" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=20;fontStyle=1;fontColor=#1e3a5f;" vertex="1" parent="1">
+          <mxGeometry x="10" y="10" width="1460" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- CAPA 1: USUARIOS -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <mxCell id="L-users" value="👥  USUARIOS" style="swimlane;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="60" width="1460" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="u-patient" value="🦷 Pacientes&#xa;(Navegador Web)" style="rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L-users">
+          <mxGeometry x="20" y="32" width="190" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="u-admin" value="👨‍💼 Administradores&#xa;(Navegador Web)" style="rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L-users">
+          <mxGeometry x="860" y="32" width="190" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- CAPA 2: FRONTEND -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <mxCell id="L-frontend" value="🖥️  FRONTEND — Next.js 14 (App Router) · TypeScript · Tailwind CSS · Puerto 3000" style="swimlane;startSize=28;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="155" width="1460" height="195" as="geometry" />
+        </mxCell>
+
+        <!-- Landing Page -->
+        <mxCell id="fe-landing" value="🌐 Landing Page (pública)" style="swimlane;startSize=24;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;rounded=1;" vertex="1" parent="L-frontend">
+          <mxGeometry x="10" y="33" width="660" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-l-chat" value="💬 Chatbot Widget&#xa;(Groq IA)" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="fe-landing">
+          <mxGeometry x="10" y="30" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-l-form" value="📅 Form. Citas Web" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="fe-landing">
+          <mxGeometry x="150" y="30" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-l-services" value="🦷 Catálogo Servicios" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="fe-landing">
+          <mxGeometry x="290" y="30" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-l-banners" value="🖼️ Banners (SSE)" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="fe-landing">
+          <mxGeometry x="430" y="30" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-l-consent" value="📋 Consentimiento&#xa;Ley 1581" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="fe-landing">
+          <mxGeometry x="10" y="85" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-l-confirm" value="✅ Confirmar Cita&#xa;/confirmar-cita" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="fe-landing">
+          <mxGeometry x="150" y="85" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-l-pay" value="💳 Pago Nequi&#xa;/pagar/[token]" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=9;" vertex="1" parent="fe-landing">
+          <mxGeometry x="290" y="85" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-l-masking" value="🔒 PII Masking&#xa;(ISO 27001 A.8.11)" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="fe-landing">
+          <mxGeometry x="430" y="85" width="130" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Admin Panel -->
+        <mxCell id="fe-admin" value="🔐 Admin Panel (autenticado · JWT · sessionStorage)" style="swimlane;startSize=24;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;rounded=1;" vertex="1" parent="L-frontend">
+          <mxGeometry x="690" y="33" width="760" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-a-dash" value="📊 Dashboard" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="fe-admin">
+          <mxGeometry x="10" y="30" width="105" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-a-agenda" value="📅 Agenda / Citas" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="fe-admin">
+          <mxGeometry x="125" y="30" width="110" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-a-pagos" value="💰 Caja / Pagos&#xa;+ Balance" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="fe-admin">
+          <mxGeometry x="245" y="30" width="110" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-a-pacientes" value="👤 Pacientes" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="fe-admin">
+          <mxGeometry x="365" y="30" width="100" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-a-especialistas" value="🩺 Especialistas" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="fe-admin">
+          <mxGeometry x="475" y="30" width="110" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-a-historia" value="📋 Historia Clínica&#xa;+ PDF" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="fe-admin">
+          <mxGeometry x="595" y="30" width="110" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-a-servicios" value="🦷 Servicios" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="fe-admin">
+          <mxGeometry x="10" y="85" width="100" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-a-banners" value="🖼️ Banners" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="fe-admin">
+          <mxGeometry x="120" y="85" width="100" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-a-nequi" value="📲 Links Nequi" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=9;" vertex="1" parent="fe-admin">
+          <mxGeometry x="230" y="85" width="110" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-a-login" value="🔑 Login / Auth&#xa;+ Auto-refresh" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="fe-admin">
+          <mxGeometry x="350" y="85" width="110" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- CAPA 3: BACKEND -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <mxCell id="L-backend" value="⚙️  BACKEND — Go 1.25 · Gin · Clean Architecture (Ports &amp; Adapters)" style="swimlane;startSize=28;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#000000;fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="370" width="1460" height="310" as="geometry" />
+        </mxCell>
+
+        <!-- Middleware -->
+        <mxCell id="be-mw" value="🛡️  CORS · Rate Limiter (por IP) · JWT AuthMiddleware" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=10;whiteSpace=wrap;" vertex="1" parent="L-backend">
+          <mxGeometry x="10" y="33" width="1430" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Rutas Públicas -->
+        <mxCell id="be-pub" value="🌐 Rutas Públicas (sin auth)" style="swimlane;startSize=24;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;rounded=1;" vertex="1" parent="L-backend">
+          <mxGeometry x="10" y="80" width="700" height="215" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-chat" value="POST /public/chat&#xa;💬 Rate: 20/min" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="be-pub">
+          <mxGeometry x="10" y="30" width="155" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-svcs" value="GET /public/services&#xa;🦷 Catálogo activo" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="be-pub">
+          <mxGeometry x="175" y="30" width="155" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-appt-web" value="POST /public/appointments&#xa;📅 + Ley 1581 consent" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="be-pub">
+          <mxGeometry x="340" y="30" width="165" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-patient-pub" value="GET /public/patients/doc&#xa;🔒 PII Masked" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="be-pub">
+          <mxGeometry x="515" y="30" width="165" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-banners-pub" value="GET /public/banners&#xa;GET /public/banners/events (SSE)" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="be-pub">
+          <mxGeometry x="10" y="85" width="210" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-pay-pub" value="GET /pay/:token&#xa;💳 Rate: 10/min" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=9;" vertex="1" parent="be-pub">
+          <mxGeometry x="230" y="85" width="145" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-webhook" value="POST /webhooks/nequi&#xa;🔗 HMAC·SHA256" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=9;" vertex="1" parent="be-pub">
+          <mxGeometry x="385" y="85" width="145" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-confirm" value="GET /appointments/confirm&#xa;✅ Token email → redirect" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="be-pub">
+          <mxGeometry x="540" y="85" width="145" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-login" value="POST /auth/login&#xa;POST /auth/refresh&#xa;Rate: 5/min" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="be-pub">
+          <mxGeometry x="10" y="140" width="145" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-categories" value="GET /service-categories" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="be-pub">
+          <mxGeometry x="165" y="150" width="165" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Rutas Protegidas -->
+        <mxCell id="be-prot" value="🔐 Rutas Protegidas (JWT)" style="swimlane;startSize=24;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;rounded=1;" vertex="1" parent="L-backend">
+          <mxGeometry x="725" y="80" width="725" height="215" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-appt-a" value="Appointments&#xa;CRUD + Admin" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="be-prot">
+          <mxGeometry x="10" y="30" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-pay-a" value="Payments&#xa;CRUD + Balance" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="be-prot">
+          <mxGeometry x="130" y="30" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-patients-a" value="Patients&#xa;CRUD" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="be-prot">
+          <mxGeometry x="250" y="30" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-history-a" value="Medical History&#xa;+ PDF (gofpdf)" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="be-prot">
+          <mxGeometry x="360" y="30" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-spec-a" value="Specialists&#xa;CRUD" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="be-prot">
+          <mxGeometry x="490" y="30" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-svcs-a" value="Services&#xa;CRUD" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="be-prot">
+          <mxGeometry x="600" y="30" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-dash-a" value="Dashboard&#xa;Stats" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="be-prot">
+          <mxGeometry x="10" y="85" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-banners-a" value="Banners&#xa;CRUD" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="be-prot">
+          <mxGeometry x="120" y="85" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-paylinks-a" value="Payment Links&#xa;Nequi" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=9;" vertex="1" parent="be-prot">
+          <mxGeometry x="230" y="85" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="be-r-auth-a" value="Auth&#xa;Logout · Me" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="be-prot">
+          <mxGeometry x="350" y="85" width="100" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- CAPA 4: SERVICIOS DE NEGOCIO -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <mxCell id="L-services" value="🧠  SERVICIOS DE NEGOCIO — Core Layer" style="swimlane;startSize=28;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#000000;fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="700" width="1460" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s-appt" value="AppointmentSrv" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="10" y="32" width="115" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s-pay" value="PaymentSrv" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="135" y="32" width="100" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s-patient" value="PatientSrv" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="245" y="32" width="95" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s-notif" value="NotificationSrv" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="350" y="32" width="115" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s-paylink" value="PaymentLinkSrv" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="475" y="32" width="115" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s-chat" value="ChatSrv&#xa;(caché 15 min)" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="600" y="32" width="105" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s-banner" value="BannerSrv&#xa;+ SSE Hub" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="715" y="32" width="105" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s-spec" value="SpecialistSrv" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="830" y="32" width="105" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s-history" value="MedicalHistorySrv" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="945" y="32" width="125" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s-svc" value="ServiceSrv" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="1080" y="32" width="95" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s-dash" value="DashboardSrv" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="1185" y="32" width="105" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s-auth" value="AuthSrv&#xa;(JWT)" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-services">
+          <mxGeometry x="1300" y="32" width="85" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- CAPA 5: WORKERS -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <mxCell id="L-workers" value="⏱️  WORKERS — Goroutines en Background" style="swimlane;startSize=28;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#000000;fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="810" width="1460" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="w-notif" value="📧 NotificationWorker&#xa;Cada 1 min — procesa emails pendientes (confirmación, recordatorio)" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=9;whiteSpace=wrap;" vertex="1" parent="L-workers">
+          <mxGeometry x="10" y="30" width="400" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="w-paylink" value="🔗 PaymentLinkWorker&#xa;Cada 1 min — expira links Nequi con expires_at &lt; now" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=9;whiteSpace=wrap;" vertex="1" parent="L-workers">
+          <mxGeometry x="420" y="30" width="390" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="w-appt" value="🗓️ AppointmentWorker&#xa;Cada 5 min — auto-cancela citas 'pending' no confirmadas (APPOINTMENT_CONFIRM_HOURS)" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=9;whiteSpace=wrap;" vertex="1" parent="L-workers">
+          <mxGeometry x="820" y="30" width="530" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- CAPA 6: REPOSITORIOS -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <mxCell id="L-repos" value="🗄️  REPOSITORIOS — GORM (Adapters Layer)" style="swimlane;startSize=28;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#000000;fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="910" width="1460" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r-appt" value="AppointmentRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="10" y="30" width="115" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="r-pay" value="PaymentRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="135" y="30" width="100" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="r-patient" value="PatientRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="245" y="30" width="100" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="r-notif" value="NotificationRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="355" y="30" width="115" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="r-paylink" value="PaymentLinkRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="480" y="30" width="115" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="r-banner" value="BannerRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="605" y="30" width="95" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="r-svc" value="ServiceRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="710" y="30" width="95" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="r-spec" value="SpecialistRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="815" y="30" width="105" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="r-history" value="MedicalHistoryRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="930" y="30" width="130" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="r-consent" value="DataConsentRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="1070" y="30" width="115" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="r-user" value="UserRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="1195" y="30" width="85" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="r-category" value="ServiceCategoryRepo" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="L-repos">
+          <mxGeometry x="1290" y="30" width="130" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- CAPA 7: BASE DE DATOS -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <mxCell id="L-db" value="🐘  BASE DE DATOS — PostgreSQL 15" style="swimlane;startSize=28;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="1010" width="1460" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="db-appt" value='"Appointments"' style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="L-db">
+          <mxGeometry x="10" y="33" width="120" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="db-pay" value='"Payments"' style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="L-db">
+          <mxGeometry x="140" y="33" width="105" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="db-patients" value='"Patients"' style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="L-db">
+          <mxGeometry x="255" y="33" width="105" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="db-services" value='"Services"&#xa;"ServiceCategories"' style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="L-db">
+          <mxGeometry x="370" y="33" width="140" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="db-paylinks" value='"PaymentLinks"' style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="L-db">
+          <mxGeometry x="520" y="33" width="115" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="db-consents" value='"DataConsents"&#xa;(Ley 1581)' style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="L-db">
+          <mxGeometry x="645" y="33" width="120" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="db-notif" value='"NotificationQueue"&#xa;"NotificationLogs"' style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="L-db">
+          <mxGeometry x="775" y="33" width="155" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="db-history" value='"MedicalHistories"' style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="L-db">
+          <mxGeometry x="940" y="33" width="130" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="db-banners" value='"Banners"' style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="L-db">
+          <mxGeometry x="1080" y="33" width="95" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="db-spec" value='"Specialists"' style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="L-db">
+          <mxGeometry x="1185" y="33" width="105" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="db-users" value='"Users"' style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="L-db">
+          <mxGeometry x="1300" y="33" width="80" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="db-note" value="Tablas con nombres en PascalCase entre comillas (PostgreSQL case-sensitive)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;fontColor=#666666;" vertex="1" parent="L-db">
+          <mxGeometry x="10" y="78" width="600" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- SERVICIOS EXTERNOS (columna derecha) -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <mxCell id="ext-title" value="☁️  SERVICIOS EXTERNOS" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="370" width="250" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ext-resend" value="📧 Resend API&#xa;━━━━━━━━━━━━━━&#xa;Emails transaccionales&#xa;· Confirmación de cita&#xa;· Recordatorio 24h antes" style="rounded=1;fillColor=#e6d0de;strokeColor=#ae4132;fontStyle=1;fontSize=9;whiteSpace=wrap;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="400" width="240" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ext-groq" value="🤖 Groq API&#xa;━━━━━━━━━━━━━━&#xa;Llama 3.3 70B (gratis)&#xa;· Chatbot laboratorio&#xa;· 14,400 req/día" style="rounded=1;fillColor=#e6d0de;strokeColor=#ae4132;fontStyle=1;fontSize=9;whiteSpace=wrap;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="510" width="240" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ext-nequi" value="📲 Nequi API&#xa;━━━━━━━━━━━━━━&#xa;Pagos móviles Colombia&#xa;· Links UUID · Webhook&#xa;· HMAC·SHA256" style="rounded=1;fillColor=#e6d0de;strokeColor=#ae4132;fontStyle=1;fontSize=9;whiteSpace=wrap;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="620" width="240" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- INFRAESTRUCTURA -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <mxCell id="L-infra" value="🏗️  INFRAESTRUCTURA" style="swimlane;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#000000;fontStyle=1;fontSize=11;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="1145" width="1460" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="i-docker" value="🐳 Docker Compose (Local)&#xa;backend · db" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="L-infra">
+          <mxGeometry x="10" y="24" width="210" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="i-railway" value="🚂 Railway (Producción)&#xa;Auto-deploy desde GitHub main" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="L-infra">
+          <mxGeometry x="230" y="24" width="280" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="i-github" value="📁 GitHub&#xa;main + develop" style="rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L-infra">
+          <mxGeometry x="520" y="24" width="160" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="i-env" value="🔐 Secretos: .env local (gitignored)&#xa;Railway Variables en producción" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="L-infra">
+          <mxGeometry x="690" y="24" width="290" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="i-cors" value="CORS_ALLOWED_ORIGINS&#xa;NEXT_PUBLIC_API_URL" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="L-infra">
+          <mxGeometry x="990" y="24" width="200" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- FLECHAS VERTICALES (capas) -->
+        <!-- ══════════════════════════════════════════════════════ -->
+
+        <!-- Paciente → Landing -->
+        <mxCell id="e-patient-landing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" source="u-patient" target="fe-landing" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Admin → Admin Panel -->
+        <mxCell id="e-admin-panel" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#82b366;strokeWidth=2;" edge="1" source="u-admin" target="fe-admin" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Landing → Rutas Públicas -->
+        <mxCell id="e-landing-pub" value="REST + SSE&#xa;NEXT_PUBLIC_API_URL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#6c8ebf;strokeWidth=2;fontStyle=2;fontSize=9;" edge="1" source="fe-landing" target="be-pub" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Admin → Rutas Protegidas -->
+        <mxCell id="e-admin-prot" value="REST + JWT Bearer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#82b366;strokeWidth=2;fontStyle=2;fontSize=9;" edge="1" source="fe-admin" target="be-prot" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Backend → Services -->
+        <mxCell id="e-backend-services" value="Handlers → Services" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#d6b656;strokeWidth=2;fontSize=9;" edge="1" source="L-backend" target="L-services" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Services → Workers (bidireccional: workers llaman services) -->
+        <mxCell id="e-workers-services" value="Workers invocan Services" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#d79b00;strokeWidth=1;dashed=1;fontSize=9;" edge="1" source="L-workers" target="L-services" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Services → Repos -->
+        <mxCell id="e-services-repos" value="Interfaces (Ports)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#b85450;strokeWidth=2;fontSize=9;" edge="1" source="L-services" target="L-repos" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Workers → Repos -->
+        <mxCell id="e-workers-repos" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#d79b00;strokeWidth=1;dashed=1;" edge="1" source="L-workers" target="L-repos" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Repos → DB -->
+        <mxCell id="e-repos-db" value="GORM · SQL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#82b366;strokeWidth=2;fontSize=9;" edge="1" source="L-repos" target="L-db" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- FLECHAS A EXTERNOS -->
+        <!-- ══════════════════════════════════════════════════════ -->
+
+        <!-- NotificationSrv → Resend -->
+        <mxCell id="e-notif-resend" value="HTTPS · API Key" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#ae4132;strokeWidth=1;dashed=1;fontSize=9;fontStyle=2;" edge="1" source="s-notif" target="ext-resend" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ChatSrv → Groq -->
+        <mxCell id="e-chat-groq" value="HTTPS · Bearer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#ae4132;strokeWidth=1;dashed=1;fontSize=9;fontStyle=2;" edge="1" source="s-chat" target="ext-groq" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- PaymentLinkSrv → Nequi -->
+        <mxCell id="e-paylink-nequi" value="HTTPS · Nequi Sandbox/Prod" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#ae4132;strokeWidth=1;dashed=1;fontSize=9;fontStyle=2;" edge="1" source="s-paylink" target="ext-nequi" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Nequi → Backend (webhook) -->
+        <mxCell id="e-nequi-webhook" value="Webhook →" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#d79b00;strokeWidth=1;dashed=1;fontSize=9;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" source="ext-nequi" target="be-r-webhook" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
