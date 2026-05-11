@@ -149,7 +149,7 @@ func (c *Client) ChatWithTools(
 		}
 	}
 
-	return "", fmt.Errorf("demasiadas rondas de tool calls")
+	return "Lo siento, tuve dificultades procesando tu solicitud. Por favor intenta de nuevo con una nueva consulta.", nil
 }
 
 // doRequest envía la solicitud a Groq y retorna la respuesta parseada.
