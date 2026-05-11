@@ -17,6 +17,22 @@ services:
       timeout: 5s
       retries: 5
 
+  arangodb:
+    image: arangodb:3.12
+    environment:
+      ARANGO_ROOT_PASSWORD: ${ARANGO_PASSWORD}
+    ports:
+      - "8529:8529"
+    networks:
+      - dental-net
+    volumes:
+      - arango_data:/var/lib/arangodb3
+    healthcheck:
+      test: ["CMD", "arangosh", "--server.authentication=true", "--server.password=${ARANGO_PASSWORD}", "--javascript.execute-string=db._version()"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   backend:
     build: .
     ports:
@@ -44,9 +60,18 @@ services:
       META_PIXEL_ID: ${META_PIXEL_ID}
       META_ACCESS_TOKEN: ${META_ACCESS_TOKEN}
       META_TEST_EVENT_CODE: ${META_TEST_EVENT_CODE}
+      ARANGO_URL: http://arangodb:8529
+      ARANGO_USER: root
+      ARANGO_PASSWORD: ${ARANGO_PASSWORD}
+      ARANGO_DATABASE: ${ARANGO_DATABASE}
     depends_on:
       db:
         condition: service_healthy
+      arangodb:
+        condition: service_healthy
+
+volumes:
+  arango_data:
 
 networks:
   dental-net:

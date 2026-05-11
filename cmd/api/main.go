@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"dental-app/internal/adapters/arangodb"
 	"dental-app/internal/adapters/handler"
 	"dental-app/internal/adapters/middleware"
 	"dental-app/internal/adapters/groq"
@@ -55,6 +56,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("❌ Error de conexión: %v", err)
 	}
+
+	// Conexión a ArangoDB (grafo de pacientes + IA). No-fatal: si falla,
+	// la app sigue funcionando sin las features de grafo.
+	arangoClient, err := arangodb.NewClient()
+	if err != nil {
+		log.Printf("⚠️  ArangoDB no disponible: %v", err)
+	}
+	_ = arangoClient
 
 	// 3. INYECCIÓN DE DEPENDENCIAS (Wiring)
 
