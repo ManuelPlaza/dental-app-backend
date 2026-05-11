@@ -158,7 +158,7 @@ func (c *Client) doRequest(messages []Message, tools []Tool) (*chatResponse, err
 		Model:       c.model,
 		Messages:    messages,
 		Temperature: 0.4,
-		MaxTokens:   450,
+		MaxTokens:   350,
 	}
 	if len(tools) > 0 {
 		req.Tools = tools

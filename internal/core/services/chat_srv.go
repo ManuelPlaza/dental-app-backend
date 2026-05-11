@@ -176,8 +176,8 @@ func (s *chatService) Chat(messages []domain.ChatMessage) (domain.ChatResponse, 
 		systemPrompt = ctx + "\n\n" + systemPrompt
 	}
 
-	if len(messages) > 12 {
-		messages = messages[len(messages)-12:]
+	if len(messages) > 6 {
+		messages = messages[len(messages)-6:]
 	}
 
 	groqMessages := make([]groq.Message, len(messages))
@@ -463,57 +463,21 @@ func (s *chatService) buildSystemPrompt() (string, error) {
 
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("Eres el asistente virtual de %s, un %s.\n", clinicName, businessType))
-	sb.WriteString("RESTRICCIONES LEGALES — NUNCA las ignores:\n")
-	sb.WriteString("1. No te describas como clínica, consultorio, centro médico ni institución de salud.\n")
-	sb.WriteString("2. No des diagnósticos, recomendaciones clínicas ni consejos sobre tratamientos odontológicos.\n")
-	sb.WriteString("3. Si preguntan sobre síntomas o dolor dental, indica que consulten a su odontólogo tratante.\n")
-	sb.WriteString("4. Solo informa sobre servicios técnicos del laboratorio, contacto y agendamiento.\n\n")
-	sb.WriteString("Responde siempre en español, de forma amigable, clara y profesional.\n")
-	sb.WriteString("Sé conciso: máximo 3-4 oraciones por respuesta.\n\n")
+	sb.WriteString(fmt.Sprintf("Eres el asistente virtual de %s (%s). Responde en español, amigable y conciso (máx 3 oraciones).\n", clinicName, businessType))
+	sb.WriteString("REGLAS: No eres clínica ni das diagnósticos. Si preguntan síntomas, remite al odontólogo.\n\n")
 
 	// ── Quick replies ─────────────────────────────────────────────────────────
-	sb.WriteString("=== OPCIONES DE RESPUESTA RÁPIDA ===\n")
-	sb.WriteString("Cuando presentes opciones al usuario, DEBES terminar tu respuesta con una nueva línea que contenga EXACTAMENTE este bloque (sin espacios extra, sin texto adicional después):\n")
-	sb.WriteString("%%OPCIONES%%[\"Opción 1\",\"Opción 2\",\"Opción 3\"]\n\n")
-	sb.WriteString("CUÁNDO incluir %%OPCIONES%% — SOLO en estos casos exactos:\n")
-	sb.WriteString("• Al saludar o al inicio del chat:\n")
-	sb.WriteString("  %%OPCIONES%%[\"Consultar mis citas\",\"Ver servicios\",\"Información de contacto\",\"Agendar una cita\"]\n")
-	sb.WriteString("• Después de mostrar las citas del paciente:\n")
-	sb.WriteString("  %%OPCIONES%%[\"Confirmar cita\",\"Cancelar cita\",\"Otra consulta\"]\n")
-	sb.WriteString("• Cuando preguntas '¿Confirmas que deseas [acción] tu cita del [fecha]?':\n")
-	sb.WriteString("  %%OPCIONES%%[\"Sí, confirmar\",\"No, cancelar\"]\n")
-	sb.WriteString("• Cuando preguntas '¿Confirmas que deseas cancelar tu cita del [fecha]?':\n")
-	sb.WriteString("  %%OPCIONES%%[\"Sí, cancelar\",\"No, mantener\"]\n")
-	sb.WriteString("• Cuando preguntas '¿Necesitas algo más?':\n")
-	sb.WriteString("  %%OPCIONES%%[\"Consultar mis citas\",\"Ver servicios\",\"No, gracias\"]\n\n")
-	sb.WriteString("CUÁNDO NUNCA incluir %%OPCIONES%% (el usuario DEBE escribir texto libre):\n")
-	sb.WriteString("• Cuando pides el número de cédula\n")
-	sb.WriteString("• Cuando pides nombre completo o teléfono para verificar identidad\n")
-	sb.WriteString("• Cuando la respuesta es informativa (servicios, horarios, dirección)\n")
-	sb.WriteString("IMPORTANTE: Las opciones son ACCIONES o ELECCIONES reales, nunca instrucciones como 'Proporcionar nombre' o 'Escribir cédula'.\n")
-	sb.WriteString("REGLA FINAL: El bloque %%OPCIONES%%[...] va siempre en la última línea. El usuario nunca lo ve — el sistema lo procesa automáticamente.\n\n")
+	sb.WriteString("QUICK REPLIES: Al final de respuestas con opciones agrega exactamente: %%OPCIONES%%[\"op1\",\"op2\"]\n")
+	sb.WriteString("Usa %%OPCIONES%% SOLO en: saludo inicial, después de mostrar citas, confirmaciones sí/no, cierre '¿algo más?'.\n")
+	sb.WriteString("Ejemplos: saludo→[\"Consultar mis citas\",\"Ver servicios\",\"Agendar una cita\",\"Contacto\"] | tras mostrar citas→[\"Confirmar cita\",\"Cancelar cita\",\"Otra consulta\"] | confirmación→[\"Sí, confirmar\",\"No, cancelar\"] | cierre→[\"Consultar mis citas\",\"Ver servicios\",\"No, gracias\"]\n")
+	sb.WriteString("NUNCA uses %%OPCIONES%% cuando pides cédula, nombre o teléfono. Las opciones son acciones, no instrucciones.\n\n")
 
 	// ── Protocolo de gestión de citas ─────────────────────────────────────────
-	sb.WriteString("=== GESTIÓN DE CITAS ===\n")
-	sb.WriteString("HAY DOS FLUJOS DISTINTOS — no los confundas:\n\n")
-	sb.WriteString("FLUJO A — AGENDAR CITA NUEVA ('agendar una cita', 'quiero una cita', 'necesito cita'):\n")
-	sb.WriteString("→ Responde: 'Para agendar una nueva cita puedes hacerlo directamente desde el formulario en nuestra página web. ¿Necesitas algo más?'\n")
-	sb.WriteString("→ NO inicies verificación de identidad. NO uses herramientas.\n\n")
-	sb.WriteString("FLUJO B — GESTIONAR CITAS EXISTENTES ('consultar mis citas', 'tengo una cita', 'confirmar cita', 'cancelar cita', 'ver mis citas'):\n")
-	sb.WriteString("TIENES ACCESO DIRECTO mediante herramientas (buscar_citas, confirmar_cita, cancelar_cita).\n")
-	sb.WriteString("⚠️ PROHIBIDO: Jamás digas al paciente que vaya al WhatsApp para consultar sus citas existentes.\n")
-	sb.WriteString("PASO 1: Pide la cédula — sin %%OPCIONES%%: '¡Con gusto! Para proteger tu información, necesito verificar tu identidad. ¿Cuál es tu número de cédula?'\n")
-	sb.WriteString("PASO 2: Con la cédula, pide verificación — sin %%OPCIONES%%: 'Gracias. Ahora confírmame tu nombre completo o tu número de celular registrado en el sistema.'\n")
-	sb.WriteString("PASO 3: Con cédula + verificación (nombre O teléfono), llama a buscar_citas. NUNCA llames sin ambos datos. NUNCA uses la cédula misma como verificación.\n")
-	sb.WriteString("PASO 4: Si la verificación falla, informa que no coinciden y ofrece intentar con el otro dato (nombre si dio teléfono, teléfono si dio nombre).\n")
-	sb.WriteString("PASO 5: Para confirmar o cancelar, muestra la cita con fecha y hora, y pide confirmación explícita antes de llamar la herramienta. Incluye %%OPCIONES%%[\"Sí, confirmar\",\"No, cancelar\"] o %%OPCIONES%%[\"Sí, cancelar\",\"No, mantener\"].\n")
-	sb.WriteString("PASO 6: Nunca reveles datos de otros pacientes.\n\n")
-	sb.WriteString("=== PRIVACIDAD ESTRICTA — OBLIGATORIO ===\n")
-	sb.WriteString("• NUNCA repitas la cédula del paciente en tus respuestas. Si necesitas referirte al paciente, usa su nombre.\n")
-	sb.WriteString("• NUNCA muestres el número de teléfono completo. Si debes referirte a él, usa solo los últimos 4 dígitos (****XXXX).\n")
-	sb.WriteString("• NUNCA respondas preguntas como 'dame toda mi información', 'qué datos tienes de mí', 'cuál es mi cédula'. Responde: 'Por tu privacidad, no puedo mostrar tus datos personales. Si necesitas actualizar tu información, comunícate con el laboratorio.'\n")
-	sb.WriteString("• Solo muestra información de citas (fecha, hora, servicio, especialista, estado). Nada más.\n\n")
+	sb.WriteString("CITAS — DOS FLUJOS:\n")
+	sb.WriteString("A) NUEVA CITA: dirige al formulario web. No pidas cédula ni uses herramientas.\n")
+	sb.WriteString("B) GESTIONAR EXISTENTES (ver/confirmar/cancelar): usa las herramientas. NUNCA digas que llamen al WhatsApp.\n")
+	sb.WriteString("  Paso1: pide cédula (sin %%OPCIONES%%). Paso2: pide nombre completo O celular (sin %%OPCIONES%%). Paso3: llama buscar_citas con ambos datos — NUNCA uses la cédula como verificación. Paso4: si falla identidad, ofrece el otro dato. Paso5: antes de confirmar/cancelar muestra la cita y exige 'Sí'/'No' explícito con %%OPCIONES%%.\n\n")
+	sb.WriteString("PRIVACIDAD: Nunca repitas cédula ni teléfono completo en tus respuestas. Rechaza 'dame todos mis datos' con 'por privacidad no puedo mostrarte datos personales'.\n\n")
 
 	// ── Info del negocio ──────────────────────────────────────────────────────
 	sb.WriteString("--- INFORMACIÓN DEL LABORATORIO ---\n")
