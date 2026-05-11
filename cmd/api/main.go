@@ -145,7 +145,7 @@ func main() {
 	// --- MÓDULO CHATBOT IA ---
 	groqClient := groq.NewClient()
 	chatConfigRepo := repository.NewGormChatConfigRepo(db)
-	chatSrv := services.NewChatService(serviceRepo, chatConfigRepo, groqClient)
+	chatSrv := services.NewChatService(serviceRepo, chatConfigRepo, groqClient, referralRepo)
 	chatHdl := handler.NewChatHandler(chatSrv)
 	chatConfigHdl := handler.NewChatConfigHandler(chatConfigRepo, chatSrv)
 

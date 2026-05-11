@@ -65,6 +65,44 @@ func (r *arangoReferralRepo) LinkReferral(referrerDoc, referredDoc string) error
 	return cursor.Close()
 }
 
+func (r *arangoReferralRepo) GetPatientReferralStatus(doc string) (*domain.PatientReferralStatus, error) {
+	if r.db == nil {
+		return nil, nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	aql := `
+		LET doc = @doc
+		LET out_count = LENGTH(
+			FOR edge IN referred FILTER edge._from == CONCAT("patients/", doc) RETURN 1
+		)
+		LET referred_by_name = FIRST(
+			FOR edge IN referred
+			FILTER edge._to == CONCAT("patients/", doc)
+			FOR p IN patients FILTER p._id == edge._from
+			RETURN p.name
+		)
+		RETURN { referral_count: out_count, referred_by_name: referred_by_name }
+	`
+	cursor, err := r.db.Query(ctx, aql, &arangodb.QueryOptions{
+		BindVars: map[string]interface{}{"doc": doc},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("arango referral status: %w", err)
+	}
+	defer cursor.Close()
+
+	if !cursor.HasMore() {
+		return &domain.PatientReferralStatus{}, nil
+	}
+	var status domain.PatientReferralStatus
+	if _, err := cursor.ReadDocument(ctx, &status); err != nil {
+		return nil, fmt.Errorf("arango referral status read: %w", err)
+	}
+	return &status, nil
+}
+
 func (r *arangoReferralRepo) TopReferrers(limit int) ([]domain.TopReferrer, error) {
 	if r.db == nil {
 		return []domain.TopReferrer{}, nil

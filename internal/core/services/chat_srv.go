@@ -5,16 +5,23 @@ import (
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
 	"fmt"
+	"log"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
 )
 
+// cedulaRe detecta cédulas colombianas (5-10 dígitos) en texto libre.
+// El límite de 10 excluye teléfonos (11 dígitos) y el mínimo de 5 excluye años (4 dígitos).
+var cedulaRe = regexp.MustCompile(`\b(\d{5,10})\b`)
+
 type chatService struct {
 	serviceRepo    ports.ServiceRepository
 	chatConfigRepo ports.ChatConfigRepository
 	groqClient     *groq.Client
+	referralRepo   ports.ReferralGraphRepository
 	cacheMu        sync.RWMutex
 	cachedPrompt   string
 	cacheExpiry    time.Time
@@ -24,11 +31,13 @@ func NewChatService(
 	serviceRepo ports.ServiceRepository,
 	chatConfigRepo ports.ChatConfigRepository,
 	groqClient *groq.Client,
+	referralRepo ports.ReferralGraphRepository,
 ) ports.ChatService {
 	return &chatService{
 		serviceRepo:    serviceRepo,
 		chatConfigRepo: chatConfigRepo,
 		groqClient:     groqClient,
+		referralRepo:   referralRepo,
 	}
 }
 
@@ -36,6 +45,11 @@ func (s *chatService) Chat(messages []domain.ChatMessage) (string, error) {
 	systemPrompt, err := s.buildSystemPrompt()
 	if err != nil {
 		return "", err
+	}
+
+	// Inyectar contexto de referidos si detectamos una cédula en los últimos mensajes
+	if ctx := s.buildReferralContext(messages); ctx != "" {
+		systemPrompt = ctx + "\n\n" + systemPrompt
 	}
 
 	if len(messages) > 10 {
@@ -48,6 +62,69 @@ func (s *chatService) Chat(messages []domain.ChatMessage) (string, error) {
 	}
 
 	return s.groqClient.Chat(systemPrompt, groqMessages)
+}
+
+// buildReferralContext busca una cédula en los últimos 3 mensajes del usuario
+// y consulta ArangoDB para obtener su perfil en el grafo de referidos.
+// Retorna un bloque de contexto listo para inyectar al system prompt, o "" si no aplica.
+func (s *chatService) buildReferralContext(messages []domain.ChatMessage) string {
+	if s.referralRepo == nil {
+		return ""
+	}
+
+	// Buscar en los últimos 3 mensajes del usuario (más recientes primero)
+	cedula := ""
+	count := 0
+	for i := len(messages) - 1; i >= 0 && count < 3; i-- {
+		if messages[i].Role != "user" {
+			continue
+		}
+		count++
+		if m := cedulaRe.FindString(messages[i].Content); m != "" {
+			cedula = m
+			break
+		}
+	}
+	if cedula == "" {
+		return ""
+	}
+
+	status, err := s.referralRepo.GetPatientReferralStatus(cedula)
+	if err != nil {
+		log.Printf("⚠️ chatbot referral lookup %s: %v", cedula, err)
+		return ""
+	}
+	if status == nil {
+		return ""
+	}
+
+	var sb strings.Builder
+	sb.WriteString("=== CONTEXTO DEL PACIENTE IDENTIFICADO EN ESTE CHAT ===\n")
+	sb.WriteString(fmt.Sprintf("Cédula detectada en la conversación: %s\n", cedula))
+
+	if status.ReferralCount > 0 {
+		sb.WriteString(fmt.Sprintf(
+			"→ Este paciente ha referido a %d %s al laboratorio. Es un referidor activo — puedes agradecerle su confianza y mencionarlo si es pertinente.\n",
+			status.ReferralCount,
+			map[bool]string{true: "persona", false: "personas"}[status.ReferralCount == 1],
+		))
+	} else {
+		sb.WriteString("→ Este paciente no ha referido a nadie aún.\n")
+	}
+
+	if status.ReferredByName != "" {
+		sb.WriteString(fmt.Sprintf(
+			"→ Llegó al laboratorio referido por: %s. Puedes mencionarlo para personalizar la bienvenida.\n",
+			status.ReferredByName,
+		))
+	} else {
+		sb.WriteString("→ No fue referido por otro paciente (vino por cuenta propia).\n")
+	}
+
+	sb.WriteString("Usa este contexto para personalizar tu respuesta si es relevante, pero sin revelar datos sensibles.\n")
+	sb.WriteString("========================================================\n")
+
+	return sb.String()
 }
 
 // InvalidateCache fuerza la reconstrucción del prompt en la próxima llamada.

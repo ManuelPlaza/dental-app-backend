@@ -128,6 +128,9 @@ type ReferralGraphRepository interface {
 	LinkReferral(referrerDoc, referredDoc string) error
 	// TopReferrers retorna los N pacientes con más referidos, ordenados desc.
 	TopReferrers(limit int) ([]domain.TopReferrer, error)
+	// GetPatientReferralStatus retorna el estado del paciente en el grafo:
+	// cuántos ha referido y quién lo refirió a él (si aplica).
+	GetPatientReferralStatus(doc string) (*domain.PatientReferralStatus, error)
 }
 
 type PaymentLinkRepository interface {
