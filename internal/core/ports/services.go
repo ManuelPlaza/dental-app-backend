@@ -119,7 +119,7 @@ type ReferralService interface {
 }
 
 type ChatService interface {
-	Chat(messages []domain.ChatMessage) (string, error)
+	Chat(messages []domain.ChatMessage) (domain.ChatResponse, error)
 	InvalidateCache()
 }
 

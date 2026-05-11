@@ -18,6 +18,22 @@ import (
 // El límite de 10 excluye teléfonos (11 dígitos) y el mínimo de 5 excluye años (4 dígitos).
 var cedulaRe = regexp.MustCompile(`\b(\d{5,10})\b`)
 
+// opcionesRe extrae el bloque %%OPCIONES%%[...] que el LLM añade al final de la respuesta.
+var opcionesRe = regexp.MustCompile(`(?m)\s*%%OPCIONES%%(\[.*?\])\s*$`)
+
+// parseQuickReplies separa el texto limpio del bloque %%OPCIONES%%[...].
+// Si el bloque no existe o el JSON es inválido, retorna el texto intacto y replies vacío.
+func parseQuickReplies(raw string) (text string, replies []string) {
+	m := opcionesRe.FindStringSubmatch(raw)
+	if m == nil {
+		return strings.TrimSpace(raw), []string{}
+	}
+	if err := json.Unmarshal([]byte(m[1]), &replies); err != nil {
+		return strings.TrimSpace(raw), []string{}
+	}
+	return strings.TrimSpace(opcionesRe.ReplaceAllString(raw, "")), replies
+}
+
 // ── Definición de herramientas ────────────────────────────────────────────────
 
 var appointmentTools = []groq.Tool{
@@ -118,10 +134,10 @@ func NewChatService(
 	}
 }
 
-func (s *chatService) Chat(messages []domain.ChatMessage) (string, error) {
+func (s *chatService) Chat(messages []domain.ChatMessage) (domain.ChatResponse, error) {
 	systemPrompt, err := s.buildSystemPrompt()
 	if err != nil {
-		return "", err
+		return domain.ChatResponse{}, err
 	}
 
 	// Contexto de referidos si se detecta cédula
@@ -138,7 +154,13 @@ func (s *chatService) Chat(messages []domain.ChatMessage) (string, error) {
 		groqMessages[i] = groq.Message{Role: m.Role, Content: m.Content}
 	}
 
-	return s.groqClient.ChatWithTools(systemPrompt, groqMessages, appointmentTools, s.execTool)
+	raw, err := s.groqClient.ChatWithTools(systemPrompt, groqMessages, appointmentTools, s.execTool)
+	if err != nil {
+		return domain.ChatResponse{}, err
+	}
+
+	text, qr := parseQuickReplies(raw)
+	return domain.ChatResponse{Response: text, QuickReplies: qr}, nil
 }
 
 func (s *chatService) InvalidateCache() {
@@ -408,6 +430,20 @@ func (s *chatService) buildSystemPrompt() (string, error) {
 	sb.WriteString("4. Solo informa sobre servicios técnicos del laboratorio, contacto y agendamiento.\n\n")
 	sb.WriteString("Responde siempre en español, de forma amigable, clara y profesional.\n")
 	sb.WriteString("Sé conciso: máximo 3-4 oraciones por respuesta.\n\n")
+
+	// ── Quick replies ─────────────────────────────────────────────────────────
+	sb.WriteString("=== OPCIONES DE RESPUESTA RÁPIDA ===\n")
+	sb.WriteString("Cuando presentes opciones al usuario, DEBES terminar tu respuesta con una nueva línea que contenga EXACTAMENTE este bloque (sin espacios extra, sin texto adicional después):\n")
+	sb.WriteString("%%OPCIONES%%[\"Opción 1\",\"Opción 2\",\"Opción 3\"]\n\n")
+	sb.WriteString("CUÁNDO incluir el bloque %%OPCIONES%%:\n")
+	sb.WriteString("• Saludo o inicio de chat → %%OPCIONES%%[\"Consultar mis citas\",\"Ver servicios\",\"Información de contacto\",\"Agendar una cita\"]\n")
+	sb.WriteString("• Cuando el paciente ya está verificado y pregunta por sus citas → %%OPCIONES%%[\"Confirmar cita\",\"Cancelar cita\",\"Ver mis citas\"]\n")
+	sb.WriteString("• Cuando preguntas '¿Confirmas que deseas [acción]...?' → %%OPCIONES%%[\"Sí, confirmar\",\"No, cancelar\"]\n")
+	sb.WriteString("• Cuando preguntas '¿Necesitas algo más?' → %%OPCIONES%%[\"Ver mis citas\",\"Hablar con un asesor\",\"No, gracias\"]\n")
+	sb.WriteString("CUÁNDO NO incluir el bloque (el usuario DEBE escribir):\n")
+	sb.WriteString("• Cuando pides la cédula al paciente\n")
+	sb.WriteString("• Cuando pides nombre completo o teléfono para verificar identidad\n")
+	sb.WriteString("REGLA: El bloque %%OPCIONES%%[...] va siempre en la última línea. El usuario nunca lo ve — el sistema lo procesa automáticamente.\n\n")
 
 	// ── Protocolo de gestión de citas ─────────────────────────────────────────
 	sb.WriteString("=== GESTIÓN DE CITAS — FUNCIONALIDAD PRINCIPAL DEL CHATBOT ===\n")

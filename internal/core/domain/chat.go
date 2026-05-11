@@ -10,5 +10,6 @@ type ChatRequest struct {
 }
 
 type ChatResponse struct {
-	Reply string `json:"reply"`
+	Response     string   `json:"response"`
+	QuickReplies []string `json:"quick_replies"`
 }
