@@ -40,6 +40,8 @@ type AppointmentRepository interface {
 	// GetOccupiedRanges retorna los rangos [start, end] de citas pending/scheduled
 	// del especialista en la fecha indicada (hora Bogotá).
 	GetOccupiedRanges(specialistID uint, date time.Time) ([][2]time.Time, error)
+	// GetActiveByPatientDocument retorna citas pending/scheduled de un paciente por cédula.
+	GetActiveByPatientDocument(doc string) ([]domain.Appointment, error)
 }
 
 // ... (interfaces anteriores)

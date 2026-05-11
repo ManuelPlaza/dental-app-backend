@@ -10,10 +10,56 @@ import (
 	"time"
 )
 
+// ── Tipos base ────────────────────────────────────────────────────────────────
+
 type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role       string     `json:"role"`
+	Content    string     `json:"content"`
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"`
 }
+
+// ── Tool calling ──────────────────────────────────────────────────────────────
+
+type Tool struct {
+	Type     string       `json:"type"` // "function"
+	Function ToolFunction `json:"function"`
+}
+
+type ToolFunction struct {
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Parameters  interface{} `json:"parameters"`
+}
+
+type ToolCall struct {
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Function struct {
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	} `json:"function"`
+}
+
+// ── Requests / Responses ──────────────────────────────────────────────────────
+
+type chatRequest struct {
+	Model       string    `json:"model"`
+	Messages    []Message `json:"messages"`
+	Temperature float64   `json:"temperature"`
+	MaxTokens   int       `json:"max_tokens"`
+	Tools       []Tool    `json:"tools,omitempty"`
+	ToolChoice  string    `json:"tool_choice,omitempty"`
+}
+
+type chatResponse struct {
+	Choices []struct {
+		Message      Message `json:"message"`
+		FinishReason string  `json:"finish_reason"`
+	} `json:"choices"`
+}
+
+// ── Client ────────────────────────────────────────────────────────────────────
 
 type Client struct {
 	apiKey  string
@@ -23,23 +69,10 @@ type Client struct {
 	sim     bool
 }
 
-type chatRequest struct {
-	Model       string    `json:"model"`
-	Messages    []Message `json:"messages"`
-	Temperature float64   `json:"temperature"`
-	MaxTokens   int       `json:"max_tokens"`
-}
-
-type chatResponse struct {
-	Choices []struct {
-		Message Message `json:"message"`
-	} `json:"choices"`
-}
-
 func NewClient() *Client {
-	apiKey  := os.Getenv("GROQ_API_KEY")
+	apiKey := os.Getenv("GROQ_API_KEY")
 	baseURL := os.Getenv("GROQ_BASE_URL")
-	model   := os.Getenv("GROQ_MODEL")
+	model := os.Getenv("GROQ_MODEL")
 
 	if baseURL == "" {
 		baseURL = "https://api.groq.com/openai/v1"
@@ -62,50 +95,104 @@ func NewClient() *Client {
 	}
 }
 
+// Chat hace una llamada simple sin herramientas.
 func (c *Client) Chat(systemPrompt string, messages []Message) (string, error) {
 	if c.sim {
 		log.Printf("[GroqClient:sim] Chat llamado con %d mensajes", len(messages))
 		return "Modo simulación activo. Configure GROQ_API_KEY en las variables de entorno para activar el asistente.", nil
 	}
+	all := append([]Message{{Role: "system", Content: systemPrompt}}, messages...)
+	resp, err := c.doRequest(all, nil)
+	if err != nil {
+		return "", err
+	}
+	return resp.Choices[0].Message.Content, nil
+}
 
-	all := make([]Message, 0, len(messages)+1)
-	all = append(all, Message{Role: "system", Content: systemPrompt})
-	all = append(all, messages...)
+// ChatWithTools hace una llamada con herramientas y ejecuta el bucle de tool calls
+// hasta obtener una respuesta de texto final. execFn recibe (toolName, argsJSON) y
+// retorna el resultado como string (puede ser JSON).
+func (c *Client) ChatWithTools(
+	systemPrompt string,
+	messages []Message,
+	tools []Tool,
+	execFn func(name, args string) string,
+) (string, error) {
+	if c.sim {
+		return c.Chat(systemPrompt, messages)
+	}
 
-	body, err := json.Marshal(chatRequest{
+	all := append([]Message{{Role: "system", Content: systemPrompt}}, messages...)
+
+	for round := 0; round < 6; round++ {
+		resp, err := c.doRequest(all, tools)
+		if err != nil {
+			return "", err
+		}
+		choice := resp.Choices[0]
+
+		if choice.FinishReason != "tool_calls" || len(choice.Message.ToolCalls) == 0 {
+			return choice.Message.Content, nil
+		}
+
+		// Adjuntar mensaje del asistente con los tool_calls
+		all = append(all, choice.Message)
+
+		// Ejecutar cada herramienta y adjuntar resultado
+		for _, tc := range choice.Message.ToolCalls {
+			result := execFn(tc.Function.Name, tc.Function.Arguments)
+			all = append(all, Message{
+				Role:       "tool",
+				Content:    result,
+				ToolCallID: tc.ID,
+			})
+		}
+	}
+
+	return "", fmt.Errorf("demasiadas rondas de tool calls")
+}
+
+// doRequest envía la solicitud a Groq y retorna la respuesta parseada.
+func (c *Client) doRequest(messages []Message, tools []Tool) (*chatResponse, error) {
+	req := chatRequest{
 		Model:       c.model,
-		Messages:    all,
-		Temperature: 0.7,
-		MaxTokens:   512,
-	})
-	if err != nil {
-		return "", err
+		Messages:    messages,
+		Temperature: 0.4,
+		MaxTokens:   600,
+	}
+	if len(tools) > 0 {
+		req.Tools = tools
+		req.ToolChoice = "auto"
 	}
 
-	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/chat/completions", bytes.NewReader(body))
+	body, err := json.Marshal(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.http.Do(req)
+	httpReq, err := http.NewRequest(http.MethodPost, c.baseURL+"/chat/completions", bytes.NewReader(body))
 	if err != nil {
-		return "", fmt.Errorf("error llamando a Groq: %w", err)
+		return nil, err
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.http.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("error llamando a Groq: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Groq respondió con status %d", resp.StatusCode)
+		return nil, fmt.Errorf("Groq respondió con status %d", resp.StatusCode)
 	}
 
 	var result chatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", err
+		return nil, err
 	}
 	if len(result.Choices) == 0 {
-		return "", fmt.Errorf("respuesta vacía de Groq")
+		return nil, fmt.Errorf("respuesta vacía de Groq")
 	}
-
-	return result.Choices[0].Message.Content, nil
+	return &result, nil
 }
