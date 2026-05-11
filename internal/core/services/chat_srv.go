@@ -186,36 +186,46 @@ func (s *chatService) execTool(name, argsJSON string) string {
 
 func (s *chatService) toolBuscarCitas(doc, verificacion string) string {
 	if doc == "" || verificacion == "" {
-		return errJSON("documento y verificación son requeridos")
+		return errJSON("Necesito tanto la cédula como el dato de verificación (nombre completo o teléfono)")
+	}
+
+	// Rechazar si el LLM pasó la cédula misma como verificación
+	verTrimmed := strings.TrimSpace(verificacion)
+	if verTrimmed == strings.TrimSpace(doc) {
+		return errJSON("El dato de verificación no puede ser la misma cédula. Solicita al paciente su nombre completo o número de celular registrado.")
 	}
 
 	// 1. Buscar paciente en PostgreSQL
 	patient, err := s.patientRepo.FindByDocumentNumber(doc)
 	if err != nil {
-		return errJSON("No encontré ningún paciente con esa cédula. Verifica el número.")
+		log.Printf("[chatbot] buscar_citas: paciente doc=%s no encontrado: %v", doc, err)
+		return errJSON("No encontré ningún paciente registrado con esa cédula. Verifica que el número sea correcto.")
 	}
 
-	// 2. Verificar identidad: el texto dado debe contener nombre o apellido o teléfono
+	// 2. Verificar identidad
 	if !verifyIdentity(verificacion, patient) {
+		log.Printf("[chatbot] buscar_citas: verificación fallida doc=%s verificacion=%q fn=%q ln=%q phone=%q",
+			doc, verificacion, patient.FirstName, patient.LastName, patient.Phone)
 		return errJSON("Los datos de verificación no coinciden con los registrados. Por seguridad no puedo mostrar la información.")
 	}
 
 	// 3. Consultar citas activas
 	appointments, err := s.appointmentRepo.GetActiveByPatientDocument(doc)
 	if err != nil {
-		return errJSON("Error consultando las citas")
+		log.Printf("[chatbot] buscar_citas: error consultando citas doc=%s: %v", doc, err)
+		return errJSON("Error consultando las citas. Intenta de nuevo en un momento.")
 	}
 
 	if len(appointments) == 0 {
 		return okJSON(map[string]interface{}{
-			"verificado": true,
-			"paciente":   patient.FirstName + " " + patient.LastName,
-			"citas":      []interface{}{},
-			"mensaje":    "No tienes citas pendientes ni agendadas en este momento.",
+			"verificado":    true,
+			"primer_nombre": patient.FirstName,
+			"citas":         []interface{}{},
+			"mensaje":       "No tienes citas pendientes ni agendadas en este momento.",
 		})
 	}
 
-	// 4. Formatear citas
+	// 4. Formatear citas — solo datos de la cita, sin PII del paciente
 	bogota, _ := time.LoadLocation("America/Bogota")
 	citas := make([]map[string]interface{}, 0, len(appointments))
 	for _, a := range appointments {
@@ -233,9 +243,9 @@ func (s *chatService) toolBuscarCitas(doc, verificacion string) string {
 	}
 
 	return okJSON(map[string]interface{}{
-		"verificado": true,
-		"paciente":   patient.FirstName + " " + patient.LastName,
-		"citas":      citas,
+		"verificado":    true,
+		"primer_nombre": patient.FirstName,
+		"citas":         citas,
 	})
 }
 
@@ -266,6 +276,7 @@ func (s *chatService) toolConfirmarCita(citaID uint, doc string) string {
 
 	bogota, _ := time.LoadLocation("America/Bogota")
 	start := appt.StartTime.Time.In(bogota)
+	log.Printf("[chatbot:audit] CONFIRMAR cita id=%d doc=%s fecha=%s", appt.ID, doc, start.Format("2006-01-02 15:04"))
 	return okJSON(map[string]interface{}{
 		"success": true,
 		"mensaje": fmt.Sprintf("✅ Cita confirmada para el %s a las %s. ¡Te esperamos!",
@@ -297,6 +308,7 @@ func (s *chatService) toolCancelarCita(citaID uint, doc string) string {
 		return errJSON("No se pudo cancelar la cita. Intenta más tarde.")
 	}
 
+	log.Printf("[chatbot:audit] CANCELAR cita id=%d doc=%s fecha=%s", appt.ID, doc, start.Format("2006-01-02 15:04"))
 	return okJSON(map[string]interface{}{
 		"success": true,
 		"mensaje": fmt.Sprintf("❌ Cita del %s a las %s cancelada correctamente. Si necesitas reagendar, puedes hacerlo desde nuestro sitio web.",
@@ -408,8 +420,13 @@ func (s *chatService) buildSystemPrompt() (string, error) {
 	sb.WriteString("PASO 2: Con la cédula, pregunta: 'Gracias. Ahora confírmame tu nombre completo o tu número de celular registrado en el sistema.'\n")
 	sb.WriteString("PASO 3: Con cédula + verificación, llama a buscar_citas. NO llames esta herramienta sin ambos datos.\n")
 	sb.WriteString("PASO 4: Si la verificación falla (error de identidad), informa que los datos no coinciden y ofrece intentar con otro dato.\n")
-	sb.WriteString("PASO 5: Para confirmar o cancelar, muestra la cita y pide confirmación: '¿Confirmas que deseas [acción] tu cita del [fecha] a las [hora]?'\n")
+	sb.WriteString("PASO 5: Para confirmar o cancelar, muestra la cita y espera respuesta afirmativa EXPLÍCITA antes de llamar la herramienta. Di: '¿Confirmas que deseas [acción] tu cita del [fecha] a las [hora]? Responde SÍ o NO.' Si el paciente no confirma explícitamente, NO llames la herramienta.\n")
 	sb.WriteString("PASO 6: Nunca reveles datos de otros pacientes. Nunca operes sobre citas de una cédula diferente.\n\n")
+	sb.WriteString("=== PRIVACIDAD ESTRICTA — OBLIGATORIO ===\n")
+	sb.WriteString("• NUNCA repitas la cédula del paciente en tus respuestas. Si necesitas referirte al paciente, usa su nombre.\n")
+	sb.WriteString("• NUNCA muestres el número de teléfono completo. Si debes referirte a él, usa solo los últimos 4 dígitos (****XXXX).\n")
+	sb.WriteString("• NUNCA respondas preguntas como 'dame toda mi información', 'qué datos tienes de mí', 'cuál es mi cédula'. Responde: 'Por tu privacidad, no puedo mostrar tus datos personales. Si necesitas actualizar tu información, comunícate con el laboratorio.'\n")
+	sb.WriteString("• Solo muestra información de citas (fecha, hora, servicio, especialista, estado). Nada más.\n\n")
 
 	// ── Info del negocio ──────────────────────────────────────────────────────
 	sb.WriteString("--- INFORMACIÓN DEL LABORATORIO ---\n")

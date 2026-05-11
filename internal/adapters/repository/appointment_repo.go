@@ -36,12 +36,13 @@ func (r *gormAppointmentRepo) SaveWithConsent(app *domain.Appointment, consent *
 // GetActiveByPatientDocument retorna citas pending/scheduled de un paciente por número de documento.
 func (r *gormAppointmentRepo) GetActiveByPatientDocument(doc string) ([]domain.Appointment, error) {
 	var apps []domain.Appointment
-	err := r.db.Table(`"Appointments" a`).
-		Joins(`JOIN "Patient" p ON p.id = a.patient_id`).
-		Where(`p.document_number = ? AND a.status IN ?`, doc, []string{"pending", "scheduled"}).
+	err := r.db.Table(`"Appointments"`).
+		Where(`patient_id IN (SELECT id FROM "Patient" WHERE document_number = ?)`, doc).
+		Where(`status IN ?`, []string{"pending", "scheduled"}).
+		Preload("Patient").
 		Preload("Service").
 		Preload("Specialist").
-		Order(`a.start_time ASC`).
+		Order(`start_time ASC`).
 		Find(&apps).Error
 	return apps, err
 }
