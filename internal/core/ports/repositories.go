@@ -119,6 +119,17 @@ type ChatConfigRepository interface {
 	Save(config *domain.ChatConfig) error
 }
 
+// ReferralGraphRepository gestiona el grafo de referidos en ArangoDB.
+// Todas las operaciones son no-fatales: si ArangoDB no está disponible (db == nil), retornan nil.
+type ReferralGraphRepository interface {
+	// SyncPatient upserta el vértice del paciente en la colección `patients`.
+	SyncPatient(id uint, doc, name string) error
+	// LinkReferral crea la arista referidor → referido en la colección `referred`.
+	LinkReferral(referrerDoc, referredDoc string) error
+	// TopReferrers retorna los N pacientes con más referidos, ordenados desc.
+	TopReferrers(limit int) ([]domain.TopReferrer, error)
+}
+
 type PaymentLinkRepository interface {
 	Save(link *domain.PaymentLink) error
 	GetByToken(token string) (*domain.PaymentLink, error)

@@ -113,6 +113,11 @@ type PaymentLinkService interface {
 	ExpireStale() error
 }
 
+type ReferralService interface {
+	// TopReferrers retorna los N pacientes que más referidos han traído.
+	TopReferrers(limit int) ([]domain.TopReferrer, error)
+}
+
 type ChatService interface {
 	Chat(messages []domain.ChatMessage) (string, error)
 	InvalidateCache()

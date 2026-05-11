@@ -133,6 +133,8 @@ type PublicAppointmentRequest struct {
 	DatosAceptadosAt time.Time `json:"datos_aceptados_at"`
 	// Meta Ads tracking
 	Fbclid string `json:"fbclid"`
+	// Referido — número de documento del paciente que recomendó el laboratorio (opcional)
+	ReferredByDocument string `json:"referred_by_document"`
 	// Metadatos HTTP — NO vienen del JSON, los inyecta el handler
 	IPAddress string `json:"-"`
 	UserAgent string `json:"-"`

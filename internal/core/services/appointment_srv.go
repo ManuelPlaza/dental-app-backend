@@ -23,6 +23,7 @@ type appointmentService struct {
 	notificationSrv ports.NotificationService
 	consentRepo     ports.DataConsentRepository
 	metaClient      ports.MetaCAPIClient
+	referralRepo    ports.ReferralGraphRepository
 }
 
 // 2. CONSTRUCTOR
@@ -34,6 +35,7 @@ func NewAppointmentService(
 	notificationSrv ports.NotificationService,
 	consentRepo ports.DataConsentRepository,
 	metaClient ports.MetaCAPIClient,
+	referralRepo ports.ReferralGraphRepository,
 ) ports.AppointmentService {
 	return &appointmentService{
 		repo:            repo,
@@ -43,6 +45,7 @@ func NewAppointmentService(
 		notificationSrv: notificationSrv,
 		consentRepo:     consentRepo,
 		metaClient:      metaClient,
+		referralRepo:    referralRepo,
 	}
 }
 
@@ -285,7 +288,30 @@ func (s *appointmentService) ScheduleFromWeb(req *domain.PublicAppointmentReques
 		}
 	}()
 
-	// 10. Meta CAPI Lead event (async — no bloquea la respuesta)
+	// 10. Grafo de referidos ArangoDB (async — no bloquea la respuesta)
+	if req.ReferredByDocument != "" && req.ReferredByDocument != req.DocumentNumber {
+		go func(newPatient *domain.Patient, referrerDoc string) {
+			fullName := newPatient.FirstName + " " + newPatient.LastName
+			if err := s.referralRepo.SyncPatient(newPatient.ID, newPatient.DocumentNumber, fullName); err != nil {
+				log.Printf("⚠️ ArangoDB sync nuevo paciente %s: %s", newPatient.DocumentNumber, err)
+			}
+			// Buscar referidor en PostgreSQL para sincronizarlo también
+			referrer, err := s.patientRepo.FindByDocumentNumber(referrerDoc)
+			if err != nil {
+				log.Printf("⚠️ Referidor %s no encontrado en DB — arista no creada", referrerDoc)
+				return
+			}
+			referrerName := referrer.FirstName + " " + referrer.LastName
+			if err := s.referralRepo.SyncPatient(referrer.ID, referrer.DocumentNumber, referrerName); err != nil {
+				log.Printf("⚠️ ArangoDB sync referidor %s: %s", referrerDoc, err)
+			}
+			if err := s.referralRepo.LinkReferral(referrerDoc, newPatient.DocumentNumber); err != nil {
+				log.Printf("⚠️ ArangoDB link referral %s→%s: %s", referrerDoc, newPatient.DocumentNumber, err)
+			}
+		}(patient, req.ReferredByDocument)
+	}
+
+	// 11. Meta CAPI Lead event (async — no bloquea la respuesta)
 	go func() {
 		landingURL := os.Getenv("LANDING_URL")
 		if landingURL == "" {

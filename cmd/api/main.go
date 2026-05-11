@@ -57,13 +57,13 @@ func main() {
 		log.Fatalf("❌ Error de conexión: %v", err)
 	}
 
-	// Conexión a ArangoDB (grafo de pacientes + IA). No-fatal: si falla,
+	// Conexión a ArangoDB (grafo de referidos). No-fatal: si falla,
 	// la app sigue funcionando sin las features de grafo.
 	arangoClient, err := arangodb.NewClient()
 	if err != nil {
 		log.Printf("⚠️  ArangoDB no disponible: %v", err)
 	}
-	_ = arangoClient
+	referralRepo := arangodb.NewReferralRepo(arangoClient)
 
 	// 3. INYECCIÓN DE DEPENDENCIAS (Wiring)
 
@@ -104,8 +104,12 @@ func main() {
 	// --- MÓDULO META CAPI ---
 	metaClient := meta.NewCAPIClient()
 
+	// --- MÓDULO REFERIDOS (ArangoDB grafo) ---
+	referralSrv := services.NewReferralService(referralRepo)
+	referralHdl := handler.NewReferralHandler(referralSrv)
+
 	// --- MÓDULO CITAS ---
-	appointSrv := services.NewAppointmentService(appointRepo, patientRepo, serviceRepo, specialistRepo, notificationSrv, consentRepo, metaClient)
+	appointSrv := services.NewAppointmentService(appointRepo, patientRepo, serviceRepo, specialistRepo, notificationSrv, consentRepo, metaClient, referralRepo)
 	appointHdl := handler.NewAppointmentHandler(appointSrv)
 
 	// --- MÓDULO 3: PAGOS (Caja) ---
@@ -283,6 +287,9 @@ func main() {
 		// Configuración del Chatbot IA
 		v1.GET("/admin/chat-config", chatConfigHdl.Get)
 		v1.PUT("/admin/chat-config", chatConfigHdl.Save)
+
+		// Grafo de referidos ArangoDB
+		v1.GET("/admin/referrals/top", referralHdl.TopReferrers)
 	}
 
 	// 5. Correr Servidor
