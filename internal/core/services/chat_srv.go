@@ -193,7 +193,11 @@ func (s *chatService) Chat(messages []domain.ChatMessage) (domain.ChatResponse, 
 		raw, err = s.groqClient.Chat(systemPrompt, groqMessages)
 	}
 	if err != nil {
-		return domain.ChatResponse{}, err
+		log.Printf("[chatbot] error Groq: %v", err)
+		return domain.ChatResponse{
+			Response:     "Lo siento, en este momento tengo dificultades para responder. Por favor intenta de nuevo en un momento. Si el problema persiste, puedes contactarnos por WhatsApp.",
+			QuickReplies: []string{},
+		}, nil
 	}
 
 	text, qr := parseQuickReplies(raw)

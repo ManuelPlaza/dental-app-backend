@@ -184,7 +184,15 @@ func (c *Client) doRequest(messages []Message, tools []Tool) (*chatResponse, err
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Groq respondió con status %d", resp.StatusCode)
+		var errBody struct {
+			Error struct {
+				Message string `json:"message"`
+				Code    string `json:"code"`
+			} `json:"error"`
+		}
+		json.NewDecoder(resp.Body).Decode(&errBody)
+		log.Printf("[GroqClient] error status=%d code=%s msg=%s", resp.StatusCode, errBody.Error.Code, errBody.Error.Message)
+		return nil, fmt.Errorf("Groq status %d: %s", resp.StatusCode, errBody.Error.Message)
 	}
 
 	var result chatResponse
