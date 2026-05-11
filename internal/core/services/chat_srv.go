@@ -194,10 +194,11 @@ func (s *chatService) Chat(messages []domain.ChatMessage) (domain.ChatResponse, 
 	}
 	if err != nil {
 		log.Printf("[chatbot] error Groq: %v", err)
-		return domain.ChatResponse{
-			Response:     "Lo siento, en este momento tengo dificultades para responder. Por favor intenta de nuevo en un momento. Si el problema persiste, puedes contactarnos por WhatsApp.",
-			QuickReplies: []string{},
-		}, nil
+		msg := "Lo siento, en este momento tengo dificultades para responder. Por favor intenta de nuevo en un momento."
+		if strings.HasPrefix(err.Error(), "rate_limit:") {
+			msg = "El asistente está recibiendo muchas consultas en este momento. Espera unos segundos e intenta de nuevo. 🙏"
+		}
+		return domain.ChatResponse{Response: msg, QuickReplies: []string{}}, nil
 	}
 
 	text, qr := parseQuickReplies(raw)
@@ -254,8 +255,13 @@ func (s *chatService) toolBuscarCitas(doc, verificacion string) string {
 
 	// Rechazar si el LLM pasó la cédula misma como verificación
 	verTrimmed := strings.TrimSpace(verificacion)
-	if verTrimmed == strings.TrimSpace(doc) {
+	docTrimmed := strings.TrimSpace(doc)
+	if verTrimmed == docTrimmed {
 		return errJSON("El dato de verificación no puede ser la misma cédula. Solicita al paciente su nombre completo o número de celular registrado.")
+	}
+	// Detectar si el LLM confundió celular con cédula (10 dígitos que empieza por 3)
+	if len(docTrimmed) == 10 && docTrimmed[0] == '3' {
+		return errJSON("Ese número parece ser un celular, no una cédula. Por favor solicita al paciente su número de cédula de ciudadanía.")
 	}
 
 	// 1. Buscar paciente en PostgreSQL

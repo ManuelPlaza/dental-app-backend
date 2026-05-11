@@ -192,6 +192,9 @@ func (c *Client) doRequest(messages []Message, tools []Tool) (*chatResponse, err
 		}
 		json.NewDecoder(resp.Body).Decode(&errBody)
 		log.Printf("[GroqClient] error status=%d code=%s msg=%s", resp.StatusCode, errBody.Error.Code, errBody.Error.Message)
+		if resp.StatusCode == 429 {
+			return nil, fmt.Errorf("rate_limit: %s", errBody.Error.Message)
+		}
 		return nil, fmt.Errorf("Groq status %d: %s", resp.StatusCode, errBody.Error.Message)
 	}
 
