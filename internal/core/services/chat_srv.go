@@ -134,6 +134,37 @@ func NewChatService(
 	}
 }
 
+// appointmentKeywords son términos que indican que el usuario quiere gestionar citas existentes.
+// Si ninguno aparece en las últimas 4 interacciones, no se envían las herramientas a Groq.
+var appointmentKeywords = []string{
+	"cita", "citas", "consultar", "confirmar", "cancelar", "gestionar",
+	"cedula", "cédula", "celular", "teléfono", "telefono", "nombre",
+	"pendiente", "agendada", "verificar", cedulaRe.String(),
+}
+
+// needsTools retorna true si el historial reciente sugiere que el usuario
+// quiere gestionar citas existentes (no solo preguntar por servicios/horarios).
+func needsTools(messages []domain.ChatMessage) bool {
+	// Revisar las últimas 4 interacciones
+	start := len(messages) - 4
+	if start < 0 {
+		start = 0
+	}
+	for _, m := range messages[start:] {
+		lower := strings.ToLower(m.Content)
+		for _, kw := range appointmentKeywords {
+			if strings.Contains(lower, kw) {
+				return true
+			}
+		}
+		// Detectar cédula (número 5-10 dígitos)
+		if cedulaRe.MatchString(lower) {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *chatService) Chat(messages []domain.ChatMessage) (domain.ChatResponse, error) {
 	systemPrompt, err := s.buildSystemPrompt()
 	if err != nil {
@@ -154,7 +185,13 @@ func (s *chatService) Chat(messages []domain.ChatMessage) (domain.ChatResponse, 
 		groqMessages[i] = groq.Message{Role: m.Role, Content: m.Content}
 	}
 
-	raw, err := s.groqClient.ChatWithTools(systemPrompt, groqMessages, appointmentTools, s.execTool)
+	var raw string
+	// Solo enviar tools (y pagar el costo de múltiples rondas) si el contexto lo requiere
+	if needsTools(messages) {
+		raw, err = s.groqClient.ChatWithTools(systemPrompt, groqMessages, appointmentTools, s.execTool)
+	} else {
+		raw, err = s.groqClient.Chat(systemPrompt, groqMessages)
+	}
 	if err != nil {
 		return domain.ChatResponse{}, err
 	}

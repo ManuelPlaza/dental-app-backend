@@ -124,7 +124,7 @@ func (c *Client) ChatWithTools(
 
 	all := append([]Message{{Role: "system", Content: systemPrompt}}, messages...)
 
-	for round := 0; round < 6; round++ {
+	for round := 0; round < 3; round++ {
 		resp, err := c.doRequest(all, tools)
 		if err != nil {
 			return "", err
@@ -158,7 +158,7 @@ func (c *Client) doRequest(messages []Message, tools []Tool) (*chatResponse, err
 		Model:       c.model,
 		Messages:    messages,
 		Temperature: 0.4,
-		MaxTokens:   600,
+		MaxTokens:   450,
 	}
 	if len(tools) > 0 {
 		req.Tools = tools
