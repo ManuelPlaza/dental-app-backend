@@ -10,7 +10,7 @@ import (
 	"dental-app/internal/adapters/arangodb"
 	"dental-app/internal/adapters/handler"
 	"dental-app/internal/adapters/middleware"
-	"dental-app/internal/adapters/groq"
+	"dental-app/internal/adapters/deepseek"
 	"dental-app/internal/adapters/meta"
 	"dental-app/internal/adapters/nequi"
 	"dental-app/internal/adapters/repository"
@@ -143,7 +143,7 @@ func main() {
 	paymentLinkHdl := handler.NewPaymentLinkHandler(paymentLinkSrv)
 
 	// --- MÓDULO CHATBOT IA ---
-	groqClient := groq.NewClient()
+	groqClient := deepseek.NewClient()
 	chatConfigRepo := repository.NewGormChatConfigRepo(db)
 	chatSrv := services.NewChatService(serviceRepo, chatConfigRepo, groqClient, referralRepo, patientRepo, appointRepo)
 	chatHdl := handler.NewChatHandler(chatSrv)

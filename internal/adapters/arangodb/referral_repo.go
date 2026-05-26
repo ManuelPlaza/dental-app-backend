@@ -16,6 +16,9 @@ type arangoReferralRepo struct {
 }
 
 func NewReferralRepo(c *Client) ports.ReferralGraphRepository {
+	if c == nil {
+		return &arangoReferralRepo{}
+	}
 	return &arangoReferralRepo{db: c.DB}
 }
 

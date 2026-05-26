@@ -42,6 +42,9 @@ type AppointmentRepository interface {
 	GetOccupiedRanges(specialistID uint, date time.Time) ([][2]time.Time, error)
 	// GetActiveByPatientDocument retorna citas pending/scheduled de un paciente por cédula.
 	GetActiveByPatientDocument(doc string) ([]domain.Appointment, error)
+	// CancelByID cancela una cita atómicamente: solo actualiza si el status actual es pending/scheduled.
+	// Retorna (true, nil) si se canceló, (false, nil) si no estaba en estado cancelable.
+	CancelByID(id uint, reason, notes string) (bool, error)
 }
 
 // ... (interfaces anteriores)

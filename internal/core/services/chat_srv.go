@@ -1,7 +1,7 @@
 package services
 
 import (
-	"dental-app/internal/adapters/groq"
+	"dental-app/internal/adapters/deepseek"
 	"dental-app/internal/core/domain"
 	"dental-app/internal/core/ports"
 	"encoding/json"
@@ -36,10 +36,10 @@ func parseQuickReplies(raw string) (text string, replies []string) {
 
 // ── Definición de herramientas ────────────────────────────────────────────────
 
-var appointmentTools = []groq.Tool{
+var appointmentTools = []deepseek.Tool{
 	{
 		Type: "function",
-		Function: groq.ToolFunction{
+		Function: deepseek.ToolFunction{
 			Name:        "buscar_citas",
 			Description: "Busca las citas activas (pendientes o agendadas) de un paciente. REQUIERE verificar identidad: proporciona el documento y el nombre completo o teléfono que el paciente dijo en el chat.",
 			Parameters: map[string]interface{}{
@@ -60,7 +60,7 @@ var appointmentTools = []groq.Tool{
 	},
 	{
 		Type: "function",
-		Function: groq.ToolFunction{
+		Function: deepseek.ToolFunction{
 			Name:        "confirmar_cita",
 			Description: "Confirma una cita que está en estado pendiente. Solo usar después de que buscar_citas haya verificado la identidad del paciente.",
 			Parameters: map[string]interface{}{
@@ -81,7 +81,7 @@ var appointmentTools = []groq.Tool{
 	},
 	{
 		Type: "function",
-		Function: groq.ToolFunction{
+		Function: deepseek.ToolFunction{
 			Name:        "cancelar_cita",
 			Description: "Cancela una cita pendiente o agendada. Solo usar después de que buscar_citas haya verificado la identidad del paciente y el paciente haya confirmado explícitamente que desea cancelar.",
 			Parameters: map[string]interface{}{
@@ -107,7 +107,7 @@ var appointmentTools = []groq.Tool{
 type chatService struct {
 	serviceRepo     ports.ServiceRepository
 	chatConfigRepo  ports.ChatConfigRepository
-	groqClient      *groq.Client
+	deepseekClient  *deepseek.Client
 	referralRepo    ports.ReferralGraphRepository
 	patientRepo     ports.PatientRepository
 	appointmentRepo ports.AppointmentRepository
@@ -119,7 +119,7 @@ type chatService struct {
 func NewChatService(
 	serviceRepo ports.ServiceRepository,
 	chatConfigRepo ports.ChatConfigRepository,
-	groqClient *groq.Client,
+	deepseekClient *deepseek.Client,
 	referralRepo ports.ReferralGraphRepository,
 	patientRepo ports.PatientRepository,
 	appointmentRepo ports.AppointmentRepository,
@@ -127,7 +127,7 @@ func NewChatService(
 	return &chatService{
 		serviceRepo:     serviceRepo,
 		chatConfigRepo:  chatConfigRepo,
-		groqClient:      groqClient,
+		deepseekClient:  deepseekClient,
 		referralRepo:    referralRepo,
 		patientRepo:     patientRepo,
 		appointmentRepo: appointmentRepo,
@@ -180,17 +180,17 @@ func (s *chatService) Chat(messages []domain.ChatMessage) (domain.ChatResponse, 
 		messages = messages[len(messages)-6:]
 	}
 
-	groqMessages := make([]groq.Message, len(messages))
+	dsMessages := make([]deepseek.Message, len(messages))
 	for i, m := range messages {
-		groqMessages[i] = groq.Message{Role: m.Role, Content: m.Content}
+		dsMessages[i] = deepseek.Message{Role: m.Role, Content: m.Content}
 	}
 
 	var raw string
 	// Solo enviar tools (y pagar el costo de múltiples rondas) si el contexto lo requiere
 	if needsTools(messages) {
-		raw, err = s.groqClient.ChatWithTools(systemPrompt, groqMessages, appointmentTools, s.execTool)
+		raw, err = s.deepseekClient.ChatWithTools(systemPrompt, dsMessages, appointmentTools, s.execTool)
 	} else {
-		raw, err = s.groqClient.Chat(systemPrompt, groqMessages)
+		raw, err = s.deepseekClient.Chat(systemPrompt, dsMessages)
 	}
 	if err != nil {
 		log.Printf("[chatbot] error Groq: %v", err)
@@ -354,30 +354,36 @@ func (s *chatService) toolConfirmarCita(citaID uint, doc string) string {
 }
 
 func (s *chatService) toolCancelarCita(citaID uint, doc string) string {
+	// Verificar que la cita existe y pertenece al paciente
 	appt, err := s.appointmentRepo.GetByID(citaID)
 	if err != nil {
+		log.Printf("[chatbot:cancelar] cita id=%d no encontrada: %v", citaID, err)
 		return errJSON("No encontré la cita #" + fmt.Sprint(citaID))
 	}
-
-	// Verificar propiedad
 	if appt.Patient.DocumentNumber != doc {
+		log.Printf("[chatbot:cancelar] cita id=%d doc_appt=%s doc_solicitante=%s — no coincide", citaID, appt.Patient.DocumentNumber, doc)
 		return errJSON("Esa cita no corresponde a tu número de cédula.")
 	}
 	if appt.Status != "pending" && appt.Status != "scheduled" {
+		log.Printf("[chatbot:cancelar] cita id=%d ya en estado=%s — no cancelable", citaID, appt.Status)
 		return errJSON("La cita ya está en estado '" + statusLabel(appt.Status) + "' y no puede cancelarse.")
 	}
 
 	bogota, _ := time.LoadLocation("America/Bogota")
 	start := appt.StartTime.Time.In(bogota)
 
-	appt.Status = "cancelled"
-	appt.CancellationReason = "patient_request"
-	appt.CancellationNotes = "Cancelada por el paciente vía chatbot"
-	if err := s.appointmentRepo.Update(appt); err != nil {
+	// Actualización atómica: un solo UPDATE sin cargar ni guardar el struct completo
+	cancelled, err := s.appointmentRepo.CancelByID(citaID, "patient_request", "Cancelada por el paciente vía chatbot")
+	if err != nil {
+		log.Printf("[chatbot:cancelar] error DB cita id=%d: %v", citaID, err)
 		return errJSON("No se pudo cancelar la cita. Intenta más tarde.")
 	}
+	if !cancelled {
+		log.Printf("[chatbot:cancelar] cita id=%d no fue afectada (race condition o estado incorrecto)", citaID)
+		return errJSON("No se pudo cancelar la cita. Es posible que ya haya sido modificada. Consulta tus citas de nuevo.")
+	}
 
-	log.Printf("[chatbot:audit] CANCELAR cita id=%d doc=%s fecha=%s", appt.ID, doc, start.Format("2006-01-02 15:04"))
+	log.Printf("[chatbot:audit] CANCELAR OK cita id=%d doc=%s fecha=%s", citaID, doc, start.Format("2006-01-02 15:04"))
 	return okJSON(map[string]interface{}{
 		"success": true,
 		"mensaje": fmt.Sprintf("❌ Cita del %s a las %s cancelada correctamente. Si necesitas reagendar, puedes hacerlo desde nuestro sitio web.",
@@ -482,7 +488,8 @@ func (s *chatService) buildSystemPrompt() (string, error) {
 	sb.WriteString("CITAS — DOS FLUJOS:\n")
 	sb.WriteString("A) NUEVA CITA: dirige al formulario web. No pidas cédula ni uses herramientas.\n")
 	sb.WriteString("B) GESTIONAR EXISTENTES (ver/confirmar/cancelar): usa las herramientas. NUNCA digas que llamen al WhatsApp.\n")
-	sb.WriteString("  Paso1: pide cédula (sin %%OPCIONES%%). Paso2: pide nombre completo O celular (sin %%OPCIONES%%). Paso3: llama buscar_citas con ambos datos — NUNCA uses la cédula como verificación. Paso4: si falla identidad, ofrece el otro dato. Paso5: antes de confirmar/cancelar muestra la cita y exige 'Sí'/'No' explícito con %%OPCIONES%%.\n\n")
+	sb.WriteString("  Paso1: pide cédula (sin %%OPCIONES%%). Paso2: pide nombre completo O celular (sin %%OPCIONES%%). Paso3: llama buscar_citas con ambos datos — NUNCA uses la cédula como verificación. Paso4: si falla identidad, ofrece el otro dato. Paso5: antes de confirmar/cancelar muestra la cita y exige 'Sí'/'No' explícito con %%OPCIONES%%.\n")
+	sb.WriteString("  REGLA CRÍTICA: cuando el paciente diga 'Sí' o 'Sí, cancelar' o 'confirmar', DEBES llamar OBLIGATORIAMENTE a confirmar_cita o cancelar_cita con el id de la cita que mostraste. NUNCA respondas que la cita ya fue cancelada o confirmada sin haber llamado primero a la herramienta correspondiente. Si no llamas a la herramienta, la acción NO ocurrirá en el sistema.\n\n")
 	sb.WriteString("PRIVACIDAD: Nunca repitas cédula ni teléfono completo en tus respuestas. Rechaza 'dame todos mis datos' con 'por privacidad no puedo mostrarte datos personales'.\n\n")
 
 	// ── Info del negocio ──────────────────────────────────────────────────────

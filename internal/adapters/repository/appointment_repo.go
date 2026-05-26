@@ -203,6 +203,22 @@ func (r *gormAppointmentRepo) GetToday() ([]domain.Appointment, error) {
 	return apps, err
 }
 
+// CancelByID cancela una cita atómicamente verificando que el status sea cancelable.
+// Usa un único UPDATE con WHERE para evitar race conditions y problemas de asociaciones GORM.
+func (r *gormAppointmentRepo) CancelByID(id uint, reason, notes string) (bool, error) {
+	result := r.db.Table(`"Appointments"`).
+		Where("id = ? AND status IN ?", id, []string{"pending", "scheduled"}).
+		Updates(map[string]interface{}{
+			"status":              "cancelled",
+			"cancellation_reason": reason,
+			"cancellation_notes":  notes,
+		})
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}
+
 // GetMonthlyCancellations trae cancelaciones agrupadas por mes (últimos 6 meses)
 func (r *gormAppointmentRepo) GetMonthlyCancellations() ([]map[string]interface{}, error) {
 	var results []struct {
